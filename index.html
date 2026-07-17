@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Professores de IA</title>
+<style>
+  :root{
+    --bg-deep: #3a1212;
+    --bg-deep-2: #5a1c1c;
+    --wine: #8c2f2f;
+    --wine-2: #a83a3a;
+    --gold: #d99a3f;
+    --gold-2: #e8b35e;
+    --cream: #fff8ef;
+    --cream-2: #fbecd8;
+    --ink: #3a1212;
+    --ink-soft: #7a5a4a;
+    --line: #ecd6b8;
+    font-size: 18px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: 'Avenir Next', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-deep);
+    color: var(--ink);
+    overscroll-behavior: none;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh; /* dvh = dynamic viewport height, considera barras do navegador mobile */
+    max-width: 600px;
+    margin: 0 auto;
+    background: var(--cream);
+    position: relative;
+    box-shadow: 0 0 60px rgba(0,0,0,0.45);
+  }
+
+  /* ---------- HEADER ---------- */
+  header {
+    background: linear-gradient(135deg, var(--bg-deep-2), var(--bg-deep));
+    color: var(--cream);
+    padding: 20px 18px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute; right:-30px; top:-40px;
+    width:160px; height:160px;
+    background: radial-gradient(circle, rgba(217,154,63,0.35), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .chef-icon {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.35);
+    overflow: hidden;
+  }
+  .chef-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+  }
+  .header-text h1 {
+    margin: 0; font-size: 21px; font-weight: 800; letter-spacing: 0.2px;
+    line-height: 1.2;
+  }
+  .header-text p {
+    margin: 4px 0 0; font-size: 14px; color: #f0d9b8; font-weight: 400;
+  }
+  .gear-btn{
+    margin-left:auto;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.22);
+    color: var(--cream);
+    width: 44px; height: 44px; border-radius: 12px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:20px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 5;
+  }
+  .gear-btn:active{ background: rgba(255,255,255,0.22); }
+
+  /* ---------- CHAT ---------- */
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    background:
+      radial-gradient(circle at 10% 15%, rgba(140,47,47,0.05), transparent 35%),
+      radial-gradient(circle at 90% 85%, rgba(217,154,63,0.08), transparent 40%),
+      var(--cream);
+  }
+
+  /* ---------- LOADING / ERRO ---------- */
+  #bootScreen {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--ink-soft);
+    font-size: 17px;
+  }
+  #bootScreen .spin {
+    width: 44px; height: 44px;
+    border: 4px solid var(--line);
+    border-top-color: var(--wine);
+    border-radius: 50%;
+    margin: 0 auto 18px;
+    animation: girar 0.9s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+
+  /* ---------- WELCOME ---------- */
+  #welcomeBlock {
+    text-align: center;
+    padding: 6px 4px 4px;
+  }
+  #welcomeBlock h2 {
+    font-size: 20px;
+    margin: 0 0 6px;
+    color: var(--wine);
+    font-weight: 800;
+  }
+  #welcomeBlock p {
+    font-size: 16px;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+    line-height: 1.4;
+  }
+
+  /* ---------- CATÁLOGO ---------- */
+  .catalogo-wrap {
+    background: var(--cream-2);
+    border: 2px dashed var(--gold);
+    border-radius: 18px;
+    padding: 0 12px 14px;
+    margin: 2px 0;
+    overflow: hidden;
+    text-align: left;
+    flex-shrink: 0; /* impede o flex do #chat de esmagar o catálogo */
+  }
+  .catalog-banner {
+    background: linear-gradient(135deg, var(--gold-2), var(--gold));
+    color: var(--bg-deep);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 12px 14px;
+    margin: 0 -12px 6px;
+  }
+  .catalogo-titulo {
+    font-size: 16.5px;
+    font-weight: 800;
+    color: var(--wine);
+    margin: 14px 2px 4px;
+    line-height: 1.35;
+  }
+  .pilar-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .pilar-btn {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--cream);
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 16px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    width: 100%;
+    transition: background 0.12s, transform 0.1s;
+  }
+  .pilar-btn:active { transform: scale(0.98); background: #f7e2c4; }
+  .pilar-btn .picon { font-size: 30px; line-height: 1; flex-shrink: 0; }
+  .pilar-btn .ptitulo { font-size: 17px; font-weight: 800; color: var(--wine); line-height: 1.25; }
+  .pilar-btn .psub { font-size: 14px; color: var(--ink-soft); margin-top: 3px; line-height: 1.3; }
+  .pilar-btn.featured { background: linear-gradient(135deg, var(--gold-2), var(--gold)); border-color: var(--gold); }
+  .pilar-btn.featured .ptitulo { color: var(--bg-deep); }
+  .pilar-btn.featured .psub { color: #5a3a10; }
+  .region-title {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: var(--wine);
+    margin: 16px 2px 10px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid var(--line);
+  }
+  .state-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .state-btn {
+    background: var(--cream);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 13px 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: center;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1.25;
+    transition: background 0.12s, transform 0.1s;
+  }
+  .state-btn:active { transform: scale(0.97); background: #f7e2c4; }
+
+  .inline-catalog-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--wine);
+    margin: 14px 2px 10px;
+  }
+
+  .recipe-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .recipe-item {
+    background: var(--cream);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 16.5px;
+    font-weight: 600;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s, transform 0.1s;
+  }
+  .recipe-item:active { transform: scale(0.98); background: #f7e2c4; }
+  .recipe-item::before {
+    content: "🍽 ";
+  }
+  .recipe-item .rsub {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-top: 3px;
+    line-height: 1.3;
+  }
+  .recipe-back-btn {
+    background: none;
+    border: none;
+    color: var(--wine);
+    font-size: 15px;
+    font-weight: 700;
+    padding: 8px 4px 2px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* bolha que contém o catálogo ocupa a largura toda */
+  .msg-row.assistant .bubble.bubble-catalogo { max-width: 100%; flex: 1; }
+
+  .msg-row { display: flex; gap: 12px; max-width: 100%; }
+  .msg-row.user { justify-content: flex-end; }
+
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--gold);
+    flex-shrink: 0;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 19px;
+    margin-top: 2px;
+    overflow: hidden;
+  }
+  .avatar img {
+    width: 100%; height: 100%; object-fit: cover; object-position: top center;
+  }
+
+  .bubble {
+    padding: 14px 16px;
+    border-radius: 18px;
+    line-height: 1.55;
+    font-size: 17.5px;
+    max-width: 80%;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .msg-row.assistant .bubble {
+    background: var(--cream-2);
+    border: 2px solid var(--line);
+    border-top-left-radius: 5px;
+    color: var(--ink);
+  }
+  .msg-row.user .bubble {
+    background: var(--wine);
+    color: white;
+    border-top-right-radius: 5px;
+  }
+  .bubble img.attached {
+    max-width: 100%;
+    border-radius: 12px;
+    margin-top: 8px;
+    display: block;
+  }
+
+  .typing-dots {
+    display: flex; gap: 5px; padding: 8px 4px;
+  }
+  .typing-dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ink-soft);
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+  .typing-dots span:nth-child(2){ animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3){ animation-delay: 0.3s; }
+  @keyframes bounce { 0%,80%,100%{ transform: translateY(0); opacity:0.4;} 40%{ transform: translateY(-4px); opacity:1;} }
+
+  /* timer card inline */
+  .timer-card{
+    margin-top: 10px;
+    background: var(--bg-deep);
+    color: var(--cream);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display:flex; align-items:center; gap:12px;
+    font-size: 16px;
+  }
+  .timer-card .tnum{
+    font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums;
+    color: var(--gold-2);
+    min-width: 66px;
+  }
+  .timer-card button{
+    margin-left:auto;
+    background: var(--gold);
+    border:none; color: var(--bg-deep);
+    padding: 9px 16px; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor:pointer;
+  }
+  .timer-card button:disabled{ opacity:0.5; }
+
+  /* ---------- ATTACH PREVIEW ---------- */
+  #preview-bar {
+    display: none;
+    padding: 12px 16px 0;
+    flex-shrink: 0;
+    background: var(--cream);
+  }
+  #preview-bar.show { display: flex; align-items:center; gap: 12px; }
+  #preview-bar img { width: 60px; height: 60px; object-fit: cover; border-radius: 12px; border: 2px solid var(--line); }
+  #preview-bar .pv-info{ font-size: 15px; color: var(--ink-soft); flex:1; }
+  #preview-bar .pv-remove{
+    background: none; border: none; font-size: 22px; color: var(--ink-soft); cursor: pointer;
+    padding: 6px;
+  }
+
+  /* ---------- INPUT BAR ---------- */
+  #inputbar {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 10px 8px;
+    background: var(--cream);
+    border-top: 2px solid var(--line);
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--cream-2);
+    color: var(--ink);
+    font-size: 19px;
+    flex-shrink: 0;
+    display:flex; align-items:center; justify-content:center;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    border: 2px solid var(--line);
+  }
+  .icon-btn:active{ transform: scale(0.93); }
+  .icon-btn.recording {
+    background: var(--wine);
+    color: white;
+    border-color: var(--wine);
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0%,100%{ box-shadow: 0 0 0 0 rgba(140,47,47,0.5);} 50%{ box-shadow: 0 0 0 10px rgba(140,47,47,0);} }
+
+  #textInput {
+    flex: 1;
+    border: 2px solid var(--line);
+    background: white;
+    border-radius: 24px;
+    padding: 13px 18px;
+    font-size: 17.5px;
+    resize: none;
+    max-height: 110px;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  #textInput:focus { outline: none; border-color: var(--gold); }
+
+  #sendBtn {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    border: none;
+    background: var(--wine);
+    color: white;
+    font-size: 20px;
+    flex-shrink: 0;
+    cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #sendBtn:disabled { opacity: 0.4; }
+
+  /* ---------- SETTINGS MODAL ---------- */
+  #settingsModal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  #settingsModal.show { display: flex; }
+  .modal-box {
+    background: var(--cream);
+    border-radius: 20px;
+    padding: 26px;
+    max-width: 440px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal-box h2 { margin: 0 0 6px; font-size: 21px; color: var(--wine); }
+  .modal-box p.hint { font-size: 15px; color: var(--ink-soft); margin: 0 0 18px; line-height: 1.4; }
+  .modal-box label { font-size: 16px; font-weight: 700; display:block; margin-bottom: 8px; margin-top: 16px; }
+  .modal-box input[type=password], .modal-box input[type=text] {
+    width: 100%; padding: 13px 14px; border-radius: 12px;
+    border: 2px solid var(--line); font-size: 16px;
+  }
+  .modal-box .row-btns { display:flex; gap:12px; margin-top: 22px; }
+  .modal-box button.primary {
+    flex:1; background: var(--wine); color:white; border:none;
+    padding: 14px; border-radius: 12px; font-size: 16px; font-weight:700; cursor:pointer;
+  }
+  .modal-box button.secondary {
+    background: none; border: 2px solid var(--line); color: var(--ink);
+    padding: 14px 18px; border-radius: 12px; font-size: 16px; cursor:pointer;
+  }
+  .status-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; }
+  .status-dot.ok { background: #5c8a4f; }
+  .status-dot.off { background: var(--wine); }
+
+  input[type=file] { display: none; }
+
+  /* scrollbar */
+  #chat::-webkit-scrollbar{ width:6px; }
+  #chat::-webkit-scrollbar-thumb{ background: var(--line); border-radius: 4px; }
+
+  /* ---------- CRÉDITOS ---------- */
+  .aviso-credito {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    border: 2px solid var(--gold);
+    border-radius: 16px;
+    padding: 14px 16px;
+    font-size: 16px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0;
+  }
+  .aviso-credito span { flex: 1; }
+  .aviso-credito a {
+    background: var(--wine);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .bloqueio-credito {
+    text-align: center;
+    padding: 28px 20px;
+    background: var(--cream-2);
+    border: 2px solid var(--line);
+    border-radius: 18px;
+    margin: 10px 0;
+  }
+  .bloqueio-credito .bloqueio-icon { font-size: 44px; margin-bottom: 10px; }
+  .bloqueio-credito h3 { font-size: 20px; color: var(--wine); margin: 0 0 8px; }
+  .bloqueio-credito p { font-size: 16px; color: var(--ink-soft); margin: 0 0 18px; line-height: 1.4; }
+  .bloqueio-credito a {
+    display: inline-block;
+    background: var(--wine);
+    color: white;
+    padding: 14px 28px;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .saldo-badge {
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: right;
+    padding: 2px 16px 4px;
+    flex-shrink: 0;
+    background: var(--cream);
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <header>
+    <div class="chef-icon" id="headerIcon">🎓</div>
+    <div class="header-text">
+      <h1 id="headerNome">Carregando...</h1>
+      <p id="statusLine">um instante...</p>
+    </div>
+    <button class="gear-btn" id="openSettings">⚙️</button>
+  </header>
+
+  <div id="chat"></div>
+  <div class="saldo-badge" id="saldoBadge" style="display:none"></div>
+
+  <div id="preview-bar">
+    <img id="previewImg" src="" alt="">
+    <div class="pv-info" id="previewInfo">foto pronta para enviar</div>
+    <button class="pv-remove" id="removePreview">✕</button>
+  </div>
+
+  <div id="inputbar">
+    <button class="icon-btn" id="catalogBtn" title="Ver catálogo">📋</button>
+    <button class="icon-btn" id="cameraBtn" title="Tirar foto">📷</button>
+    <button class="icon-btn" id="galleryBtn" title="Escolher da galeria">🖼️</button>
+    <button class="icon-btn" id="micBtn" title="Falar">🎤</button>
+    <textarea id="textInput" rows="1" placeholder="Escreva aqui..."></textarea>
+    <button id="sendBtn">➤</button>
+  </div>
+
+  <input type="file" id="cameraInput" accept="image/*" capture="environment">
+  <input type="file" id="galleryInput" accept="image/*">
+
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal">
+  <div class="modal-box">
+    <h2 id="modalTitle">Configurações</h2>
+    <p class="hint" id="modalHint">Seu e-mail identifica sua conta e seus créditos, salvo só neste navegador.</p>
+
+    <label>Seu e-mail (para salvar seus créditos)</label>
+    <input type="text" id="emailInput" placeholder="seu@email.com">
+
+    <label>Status</label>
+    <p style="font-size:16px; margin:0;">
+      <span class="status-dot off" id="statusDot"></span><span id="statusText">não configurado</span>
+    </p>
+
+    <div class="row-btns">
+      <button class="secondary" id="clearChatBtn">Limpar conversa</button>
+      <button class="primary" id="saveKeyBtn">Salvar</button>
+    </div>
+
+    <div id="indicacaoBox" style="display:none; margin-top:22px; padding-top:18px; border-top:2px solid var(--line);">
+      <label>💛 Indique e ganhe</label>
+      <p class="hint" style="margin-top:4px;">Mande seu link para amigos e família. Quando alguém comprar pela primeira vez, você ganha 10 mensagens grátis!</p>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <input type="text" id="linkIndicacaoInput" readonly style="flex:1; font-size:13px;">
+        <button class="primary" id="copiarLinkBtn" style="flex:none; padding:13px 18px;">Copiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =================================================================
+   MOTOR ÚNICO — Professores de IA
+   Uma casca única que se veste de qualquer professor.
+   O professor é identificado pelo caminho da URL (ex.: /master-chef-do-amor)
+   e sua ficha completa vem do Supabase via Edge Function professor-config.
+   O system prompt NUNCA chega ao navegador — a Edge Function chat-anthropic
+   busca-o no banco pelo professor_slug.
+   ================================================================= */
+
+/* ================= CONFIG FIXA ================= */
+const SUPABASE_URL = 'https://vkjmydxsqdsuinxnlojl.supabase.co';
+const MODEL = "claude-sonnet-4-6";
+
+/* Slug do professor extraído do caminho da URL */
+const PROFESSOR_SLUG = (location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
+
+/* Ficha do professor (preenchida no boot) */
+let CONFIG = null;
+let PILARES = [];
+let MAX_HISTORICO_TROCAS = 12;
+let KIWIFY_LINK = '';
+let AVATAR_SRC = '';
+
+/* ================= STATE ================= */
+/* Chaves do localStorage separadas por professor (conversas não se misturam);
+   o e-mail é compartilhado — o aluno é o mesmo em toda a plataforma. */
+const KEY_EMAIL = 'pia_email';
+const KEY_MSGS = 'pia_msgs_' + PROFESSOR_SLUG;
+const KEY_REF = 'pia_ref_' + PROFESSOR_SLUG;
+
+let alunoEmail = localStorage.getItem(KEY_EMAIL) || '';
+let messages = JSON.parse(localStorage.getItem(KEY_MSGS) || '[]');
+let pendingImage = null;
+let isRecording = false;
+let recognition = null;
+let isSending = false;
+let creditosBloqueado = false;
+let acaoPendente = null; // guarda uma ação a ser retomada após configurar e-mail
+
+/* ================= ELEMENTS ================= */
+const chatEl = document.getElementById('chat');
+const textInput = document.getElementById('textInput');
+const sendBtn = document.getElementById('sendBtn');
+const catalogBtn = document.getElementById('catalogBtn');
+const cameraBtn = document.getElementById('cameraBtn');
+const galleryBtn = document.getElementById('galleryBtn');
+const micBtn = document.getElementById('micBtn');
+const cameraInput = document.getElementById('cameraInput');
+const galleryInput = document.getElementById('galleryInput');
+const previewBar = document.getElementById('preview-bar');
+const previewImg = document.getElementById('previewImg');
+const previewInfo = document.getElementById('previewInfo');
+const removePreview = document.getElementById('removePreview');
+const settingsModal = document.getElementById('settingsModal');
+const openSettings = document.getElementById('openSettings');
+const emailInput = document.getElementById('emailInput');
+const saveKeyBtn = document.getElementById('saveKeyBtn');
+const indicacaoBox = document.getElementById('indicacaoBox');
+const linkIndicacaoInput = document.getElementById('linkIndicacaoInput');
+const copiarLinkBtn = document.getElementById('copiarLinkBtn');
+const clearChatBtn = document.getElementById('clearChatBtn');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const statusLine = document.getElementById('statusLine');
+const headerNome = document.getElementById('headerNome');
+const headerIcon = document.getElementById('headerIcon');
+
+/* ================= BOOT — busca e aplica a ficha do professor ================= */
+function mostrarBoot(msg, comSpinner){
+  chatEl.innerHTML = '';
+  const b = document.createElement('div');
+  b.id = 'bootScreen';
+  if(comSpinner){
+    const s = document.createElement('div');
+    s.className = 'spin';
+    b.appendChild(s);
+  }
+  const t = document.createElement('div');
+  t.textContent = msg;
+  b.appendChild(t);
+  chatEl.appendChild(b);
+}
+
+function aplicarTema(tema){
+  if(!tema) return;
+  const mapa = {
+    bg_deep:'--bg-deep', bg_deep_2:'--bg-deep-2', wine:'--wine', wine_2:'--wine-2',
+    gold:'--gold', gold_2:'--gold-2', cream:'--cream', cream_2:'--cream-2',
+    ink:'--ink', ink_soft:'--ink-soft', line:'--line'
+  };
+  for(const chave in mapa){
+    if(tema[chave]) document.documentElement.style.setProperty(mapa[chave], tema[chave]);
+  }
+}
+
+async function boot(){
+  mostrarBoot('Preparando tudo pra você...', true);
+  setInputsEnabled(false);
+
+  if(!PROFESSOR_SLUG){
+    headerNome.textContent = 'Professores de IA';
+    statusLine.textContent = 'endereço incompleto';
+    mostrarBoot('Ops! Este endereço precisa indicar um professor. Confira o link que você recebeu — ele termina com o nome do professor, por exemplo: /master-chef-do-amor', false);
+    return;
+  }
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/professor-config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: PROFESSOR_SLUG })
+    });
+    if(!res.ok) throw new Error('nao_encontrado');
+    CONFIG = await res.json();
+  } catch(e) {
+    headerNome.textContent = 'Professores de IA';
+    statusLine.textContent = 'professor não encontrado';
+    mostrarBoot('Não encontrei nenhum professor neste endereço. Confira o link que você recebeu — pode ter faltado um pedacinho no final.', false);
+    return;
+  }
+
+  /* Aplica a ficha */
+  document.title = CONFIG.nome;
+  headerNome.textContent = CONFIG.nome;
+  aplicarTema(CONFIG.tema);
+  PILARES = Array.isArray(CONFIG.catalogo) ? CONFIG.catalogo : [];
+  MAX_HISTORICO_TROCAS = CONFIG.max_historico || 12;
+  KIWIFY_LINK = CONFIG.kiwify_link || '';
+  AVATAR_SRC = CONFIG.avatar_b64 ? ('data:image/png;base64,' + CONFIG.avatar_b64)
+             : (CONFIG.avatar_url || '');
+
+  if(AVATAR_SRC){
+    headerIcon.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = AVATAR_SRC;
+    img.alt = CONFIG.nome;
+    headerIcon.appendChild(img);
+  }
+
+  setInputsEnabled(true);
+  updateStatus();
+  renderAll();
+  if(alunoEmail){ carregarMeuCodigoIndicacao(); }
+}
+
+function setInputsEnabled(on){
+  textInput.disabled = !on;
+  sendBtn.disabled = !on;
+  catalogBtn.disabled = !on;
+  cameraBtn.disabled = !on;
+  galleryBtn.disabled = !on;
+  micBtn.disabled = !on;
+}
+
+/* ================= INIT / STATUS ================= */
+function updateStatus(){
+  if(alunoEmail){
+    statusDot.className = 'status-dot ok';
+    statusText.textContent = 'conectado — ' + alunoEmail;
+    statusLine.textContent = (CONFIG && CONFIG.status_line) || 'pronto pra te ensinar';
+  } else {
+    statusDot.className = 'status-dot off';
+    statusText.textContent = 'não configurado';
+    statusLine.textContent = 'configure seu e-mail para começar';
+  }
+}
+
+function renderAll(){
+  chatEl.innerHTML = '';
+  if(messages.length === 0){
+    renderWelcomeBlock();
+    // Tela inicial abre no TOPO, com a mensagem de boas-vindas visível
+    requestAnimationFrame(()=>{ chatEl.scrollTop = 0; });
+  } else {
+    messages.forEach(m => renderStoredMessage(m));
+    scrollToBottom();
+  }
+}
+
+function renderWelcomeBlock(){
+  const block = document.createElement('div');
+  block.id = 'welcomeBlock';
+
+  const h2 = document.createElement('h2');
+  h2.textContent = (CONFIG && CONFIG.welcome_titulo) || 'Oi! Como posso te ajudar hoje?';
+  const p = document.createElement('p');
+  p.textContent = (CONFIG && CONFIG.welcome_texto) || 'Toque numa opção abaixo ou escreva o que quiser.';
+
+  block.appendChild(h2);
+  block.appendChild(p);
+  if(PILARES.length > 0){
+    block.appendChild(buildCatalogGrid());
+  }
+
+  chatEl.appendChild(block);
+}
+
+/* Checks if email is configured. If not, opens settings modal
+   and returns true so the calling code can abort the action. */
+function exigeConfiguracao(acaoAposSalvar){
+  if(!alunoEmail){
+    document.getElementById('modalTitle').textContent = '👋 Antes de começar...';
+    document.getElementById('modalHint').textContent = 'Pra eu salvar seus créditos, preciso só do seu e-mail.';
+    acaoPendente = acaoAposSalvar || null;
+    settingsModal.classList.add('show');
+    return true; // configuração está faltando
+  }
+  return false;
+}
+
+/* ================= CATÁLOGO — MULTINÍVEL (dirigido pela ficha) ================= */
+
+/* Monta o catálogo completo: faixa fixa no topo + corpo que alterna entre
+   os níveis (pilares → estados/categorias → itens). Navegação é gratuita —
+   crédito só é consumido quando o professor responde. */
+function buildCatalogGrid(){
+  const wrap = document.createElement('div');
+  wrap.className = 'catalogo-wrap';
+
+  if(CONFIG && CONFIG.faixa_catalogo){
+    const banner = document.createElement('div');
+    banner.className = 'catalog-banner';
+    banner.textContent = CONFIG.faixa_catalogo;
+    wrap.appendChild(banner);
+  }
+
+  const body = document.createElement('div');
+  wrap.appendChild(body);
+
+  mostrarPilares(wrap, body);
+  return wrap;
+}
+
+/* Rola a tela para o topo do catálogo ao trocar de nível */
+function rolarParaTopoCatalogo(wrap){
+  requestAnimationFrame(()=>{ wrap.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+}
+
+/* Nível 1: os pilares do cardápio (menu inicial enxuto) */
+function mostrarPilares(wrap, body){
+  body.innerHTML = '';
+
+  const titulo = document.createElement('div');
+  titulo.className = 'catalogo-titulo';
+  titulo.textContent = '📋 O que você quer aprender hoje?';
+  body.appendChild(titulo);
+
+  const list = document.createElement('div');
+  list.className = 'pilar-list';
+
+  PILARES.forEach(pilar => {
+    const btn = document.createElement('button');
+    btn.className = 'pilar-btn' + (pilar.featured ? ' featured' : '');
+
+    const icon = document.createElement('span');
+    icon.className = 'picon';
+    icon.textContent = pilar.emoji || '📚';
+
+    const textos = document.createElement('div');
+    const t = document.createElement('div');
+    t.className = 'ptitulo';
+    t.textContent = pilar.titulo;
+    textos.appendChild(t);
+    if(pilar.subtitulo){
+      const s = document.createElement('div');
+      s.className = 'psub';
+      s.textContent = pilar.subtitulo;
+      textos.appendChild(s);
+    }
+
+    btn.appendChild(icon);
+    btn.appendChild(textos);
+    btn.onclick = () => {
+      if(pilar.regioes){
+        mostrarEstados(wrap, body, pilar);
+      } else if(pilar.categorias){
+        mostrarCategorias(wrap, body, pilar);
+      } else {
+        mostrarPratosSimples(wrap, body, pilar);
+      }
+      rolarParaTopoCatalogo(wrap);
+    };
+    list.appendChild(btn);
+  });
+
+  body.appendChild(list);
+}
+
+/* Nível 2 (pilar com regiões, ex: Sabores do Brasil): tela única rolável —
+   regiões como títulos (não clicáveis) e estados como botões. */
+function mostrarEstados(wrap, body, pilar){
+  body.innerHTML = '';
+
+  const titulo = document.createElement('div');
+  titulo.className = 'catalogo-titulo';
+  titulo.textContent = `${pilar.emoji || ''} ${pilar.titulo} — escolha uma opção:`;
+  body.appendChild(titulo);
+
+  pilar.regioes.forEach(regiao => {
+    const rt = document.createElement('div');
+    rt.className = 'region-title';
+    rt.textContent = `${regiao.emoji || ''} ${regiao.nome}`;
+    body.appendChild(rt);
+
+    const grid = document.createElement('div');
+    grid.className = 'state-grid';
+    regiao.estados.forEach(estado => {
+      const btn = document.createElement('button');
+      btn.className = 'state-btn';
+      btn.textContent = estado.nome;
+      btn.onclick = () => {
+        mostrarPratos(wrap, body, pilar, estado);
+        rolarParaTopoCatalogo(wrap);
+      };
+      grid.appendChild(btn);
+    });
+    body.appendChild(grid);
+  });
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'recipe-back-btn';
+  backBtn.textContent = '← Voltar ao cardápio';
+  backBtn.onclick = () => { mostrarPilares(wrap, body); rolarParaTopoCatalogo(wrap); };
+  body.appendChild(backBtn);
+}
+
+/* Nível 3 (pilar com regiões): itens do estado escolhido.
+   Tocar num item envia o prompt automático (a resposta consome 1 crédito). */
+function mostrarPratos(wrap, body, pilar, estado){
+  body.innerHTML = '';
+
+  const label = document.createElement('div');
+  label.className = 'inline-catalog-label';
+  label.textContent = `🍽 ${estado.nome} — escolha um item:`;
+  body.appendChild(label);
+
+  const list = document.createElement('div');
+  list.className = 'recipe-list';
+  estado.pratos.forEach(prato => {
+    const item = document.createElement('button');
+    item.className = 'recipe-item';
+    item.textContent = prato;
+    item.onclick = () => {
+      const continuar = () => {
+        textInput.value = `Me ensina a fazer ${prato} do jeito típico de ${estado.nome}`;
+        sendMessage();
+      };
+      if(exigeConfiguracao(continuar)) return;
+      continuar();
+    };
+    list.appendChild(item);
+  });
+  body.appendChild(list);
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'recipe-back-btn';
+  backBtn.textContent = '← Voltar';
+  backBtn.onclick = () => { mostrarEstados(wrap, body, pilar); rolarParaTopoCatalogo(wrap); };
+  body.appendChild(backBtn);
+}
+
+/* Nível 2 (pilar com categorias) */
+function mostrarCategorias(wrap, body, pilar){
+  body.innerHTML = '';
+
+  const label = document.createElement('div');
+  label.className = 'inline-catalog-label';
+  label.textContent = `${pilar.emoji || ''} ${pilar.titulo} — escolha uma categoria:`;
+  body.appendChild(label);
+
+  const grid = document.createElement('div');
+  grid.className = 'state-grid';
+  pilar.categorias.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'state-btn';
+    btn.textContent = `${cat.emoji || ''} ${cat.nome}`;
+    btn.onclick = () => {
+      mostrarPratosDeCategoria(wrap, body, pilar, cat);
+      rolarParaTopoCatalogo(wrap);
+    };
+    grid.appendChild(btn);
+  });
+  body.appendChild(grid);
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'recipe-back-btn';
+  backBtn.textContent = '← Voltar ao cardápio';
+  backBtn.onclick = () => { mostrarPilares(wrap, body); rolarParaTopoCatalogo(wrap); };
+  body.appendChild(backBtn);
+}
+
+/* Nível 3 (pilar com categorias): itens da categoria escolhida */
+function mostrarPratosDeCategoria(wrap, body, pilar, cat){
+  body.innerHTML = '';
+
+  const label = document.createElement('div');
+  label.className = 'inline-catalog-label';
+  label.textContent = `${cat.emoji || ''} ${cat.nome} — escolha uma opção:`;
+  body.appendChild(label);
+
+  const list = document.createElement('div');
+  list.className = 'recipe-list';
+  cat.pratos.forEach(prato => {
+    const item = document.createElement('button');
+    item.className = 'recipe-item';
+    item.textContent = prato;
+    item.onclick = () => {
+      const continuar = () => {
+        textInput.value = `Me ensina a fazer ${prato} passo a passo`;
+        sendMessage();
+      };
+      if(exigeConfiguracao(continuar)) return;
+      continuar();
+    };
+    list.appendChild(item);
+  });
+  body.appendChild(list);
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'recipe-back-btn';
+  backBtn.textContent = '← Voltar às categorias';
+  backBtn.onclick = () => { mostrarCategorias(wrap, body, pilar); rolarParaTopoCatalogo(wrap); };
+  body.appendChild(backBtn);
+}
+
+/* Nível 2 (pilares simples): lista de itens do pilar escolhido */
+function mostrarPratosSimples(wrap, body, pilar){
+  body.innerHTML = '';
+
+  const label = document.createElement('div');
+  label.className = 'inline-catalog-label';
+  label.textContent = `${pilar.emoji || ''} ${pilar.titulo} — escolha uma opção:`;
+  body.appendChild(label);
+
+  const list = document.createElement('div');
+  list.className = 'recipe-list';
+  (pilar.pratos || []).forEach(prato => {
+    const nome = (typeof prato === 'string') ? prato : prato.nome;
+    const item = document.createElement('button');
+    item.className = 'recipe-item';
+    const titulo = document.createElement('span');
+    titulo.textContent = nome;
+    item.appendChild(titulo);
+    if(typeof prato === 'object' && prato.sub){
+      const sub = document.createElement('span');
+      sub.className = 'rsub';
+      sub.textContent = prato.sub;
+      item.appendChild(sub);
+    }
+    item.onclick = () => {
+      const continuar = () => {
+        textInput.value = pilar.afetivo
+          ? `Me ensina a fazer ${nome} bem tradicional, do jeito que lembra casa de vó`
+          : `Me ensina a fazer ${nome} passo a passo`;
+        sendMessage();
+      };
+      if(exigeConfiguracao(continuar)) return;
+      continuar();
+    };
+    list.appendChild(item);
+  });
+  body.appendChild(list);
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'recipe-back-btn';
+  backBtn.textContent = '← Voltar ao cardápio';
+  backBtn.onclick = () => { mostrarPilares(wrap, body); rolarParaTopoCatalogo(wrap); };
+  body.appendChild(backBtn);
+}
+
+/* Inserts the catalog as its own row inside the conversation flow */
+function insertInlineCatalog(){
+  if(PILARES.length === 0) return;
+  removeWelcomeBlock();
+  chatEl.appendChild(buildCatalogGrid());
+  scrollToBottom();
+}
+
+function renderStoredMessage(m){
+  if(m.role === 'user'){
+    addUserBubble(extractTextFromContent(m.content), extractImageFromContent(m.content));
+  } else {
+    addAssistantBubble(extractTextFromContent(m.content), false, true);
+  }
+}
+
+function extractTextFromContent(content){
+  if(typeof content === 'string') return content;
+  const t = content.find(c => c.type === 'text');
+  return t ? t.text : '';
+}
+function extractImageFromContent(content){
+  if(typeof content === 'string') return null;
+  const img = content.find(c => c.type === 'image');
+  if(!img) return null;
+  return `data:${img.source.media_type};base64,${img.source.data}`;
+}
+
+/* ================= UI HELPERS ================= */
+function scrollToBottom(){
+  requestAnimationFrame(()=>{ chatEl.scrollTop = chatEl.scrollHeight; });
+}
+
+function removeWelcomeBlock(){
+  const w = document.getElementById('welcomeBlock');
+  if(w) w.remove();
+}
+
+function addUserBubble(text, imageDataUrl){
+  removeWelcomeBlock();
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  if(text) bubble.appendChild(document.createTextNode(text));
+  if(imageDataUrl){
+    const img = document.createElement('img');
+    img.className = 'attached';
+    img.src = imageDataUrl;
+    bubble.appendChild(img);
+  }
+  row.appendChild(bubble);
+  chatEl.appendChild(row);
+  scrollToBottom();
+}
+
+function addAssistantBubble(text, isTyping, skipTimers){
+  removeWelcomeBlock();
+  const row = document.createElement('div');
+  row.className = 'msg-row assistant';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  if(AVATAR_SRC){
+    const img = document.createElement('img');
+    img.src = AVATAR_SRC;
+    img.alt = '';
+    avatar.appendChild(img);
+  } else {
+    avatar.textContent = '🎓';
+  }
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+
+  if(isTyping){
+    bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  } else {
+    renderAssistantContent(bubble, text, skipTimers);
+  }
+
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  chatEl.appendChild(row);
+  scrollToBottom();
+  return bubble;
+}
+
+function renderAssistantContent(bubble, text, skipTimers){
+  const markerRegex = /\[TIMER:\s*(\d+)\s*\|\s*([^\]]+)\]|\[CATALOGO\]/g;
+  let lastIndex = 0;
+  let match;
+  const fragments = [];
+  while((match = markerRegex.exec(text)) !== null){
+    fragments.push({type:'text', value: text.slice(lastIndex, match.index)});
+    if(match[0] === '[CATALOGO]'){
+      fragments.push({type:'catalog'});
+    } else {
+      fragments.push({type:'timer', seconds: parseInt(match[1]), label: match[2].trim()});
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  fragments.push({type:'text', value: text.slice(lastIndex)});
+
+  fragments.forEach(f => {
+    if(f.type === 'text'){
+      if(f.value.trim().length === 0) return;
+      const span = document.createElement('span');
+      span.textContent = f.value.replace(/^\n+|\n+$/g,'');
+      bubble.appendChild(span);
+      bubble.appendChild(document.createElement('br'));
+    } else if(f.type === 'timer'){
+      bubble.appendChild(buildTimerCard(f.seconds, f.label));
+    } else if(f.type === 'catalog'){
+      if(PILARES.length === 0) return;
+      bubble.classList.add('bubble-catalogo');
+      bubble.appendChild(buildCatalogGrid());
+    }
+  });
+}
+
+function buildTimerCard(totalSeconds, label){
+  const card = document.createElement('div');
+  card.className = 'timer-card';
+
+  const num = document.createElement('div');
+  num.className = 'tnum';
+  num.textContent = formatTime(totalSeconds);
+
+  const labelEl = document.createElement('div');
+  labelEl.textContent = '⏱ ' + label;
+  labelEl.style.flex = '1';
+
+  const btn = document.createElement('button');
+  btn.textContent = 'Iniciar';
+
+  let remaining = totalSeconds;
+  let interval = null;
+
+  btn.onclick = () => {
+    if(interval){
+      clearInterval(interval);
+      interval = null;
+      btn.textContent = 'Continuar';
+      return;
+    }
+    btn.textContent = 'Pausar';
+    interval = setInterval(()=>{
+      remaining--;
+      num.textContent = formatTime(remaining);
+      if(remaining <= 0){
+        clearInterval(interval);
+        interval = null;
+        num.textContent = '🔔 Pronto!';
+        btn.disabled = true;
+        try{ new AudioContext(); }catch(e){}
+        if(navigator.vibrate) navigator.vibrate([200,100,200]);
+      }
+    }, 1000);
+  };
+
+  card.appendChild(num);
+  card.appendChild(labelEl);
+  card.appendChild(btn);
+  return card;
+}
+
+function formatTime(s){
+  const m = Math.floor(s/60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+/* ================= IMAGE HANDLING ================= */
+function fileToBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      const base64 = result.split(',')[1];
+      resolve({base64, dataUrl: result, mediaType: file.type});
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleFileSelected(file){
+  if(!file) return;
+  const {base64, dataUrl, mediaType} = await fileToBase64(file);
+  pendingImage = {base64, mediaType, dataUrl};
+  previewImg.src = dataUrl;
+  previewInfo.textContent = 'foto pronta — escreva algo (opcional) e envie';
+  previewBar.classList.add('show');
+}
+
+cameraBtn.onclick = () => cameraInput.click();
+galleryBtn.onclick = () => galleryInput.click();
+catalogBtn.onclick = () => insertInlineCatalog();
+cameraInput.onchange = (e) => handleFileSelected(e.target.files[0]);
+galleryInput.onchange = (e) => handleFileSelected(e.target.files[0]);
+removePreview.onclick = () => {
+  pendingImage = null;
+  previewBar.classList.remove('show');
+  cameraInput.value = '';
+  galleryInput.value = '';
+};
+
+/* ================= AUDIO / SPEECH-TO-TEXT ================= */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if(SpeechRecognition){
+  recognition = new SpeechRecognition();
+  recognition.lang = 'pt-BR';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onresult = (event) => {
+    let transcript = '';
+    for(let i = 0; i < event.results.length; i++){
+      transcript += event.results[i][0].transcript;
+    }
+    textInput.value = transcript;
+    autoResize();
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    micBtn.classList.remove('recording');
+    micBtn.textContent = '🎤';
+  };
+
+  recognition.onerror = (event) => {
+    isRecording = false;
+    micBtn.classList.remove('recording');
+    micBtn.textContent = '🎤';
+    if(event.error === 'not-allowed'){
+      alert('Preciso de permissão pra usar o microfone. Verifique as permissões do navegador.');
+    }
+  };
+} else {
+  micBtn.title = 'Reconhecimento de voz não suportado neste navegador (use o Chrome)';
+}
+
+micBtn.onclick = () => {
+  if(!recognition){
+    alert('Esse navegador não suporta reconhecimento de voz. Tente usar o Chrome.');
+    return;
+  }
+  if(isRecording){
+    recognition.stop();
+    return;
+  }
+  isRecording = true;
+  micBtn.classList.add('recording');
+  micBtn.textContent = '⏹️';
+  try{
+    recognition.start();
+  }catch(e){
+    isRecording = false;
+    micBtn.classList.remove('recording');
+    micBtn.textContent = '🎤';
+  }
+};
+
+/* ================= TEXTAREA AUTO-RESIZE ================= */
+function autoResize(){
+  textInput.style.height = 'auto';
+  textInput.style.height = Math.min(textInput.scrollHeight, 110) + 'px';
+}
+textInput.addEventListener('input', autoResize);
+textInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+/* ================= CRÉDITOS / SUPABASE ================= */
+
+function atualizarSaldoBadge(restantes){
+  const badge = document.getElementById('saldoBadge');
+  if(!badge) return;
+  if(restantes === null || restantes === undefined){ badge.style.display='none'; return; }
+  badge.style.display = 'block';
+  badge.textContent = `💬 ${restantes} mensagem${restantes !== 1 ? 's' : ''} restante${restantes !== 1 ? 's' : ''}`;
+  badge.style.color = restantes <= 3 ? 'var(--wine)' : 'var(--ink-soft)';
+}
+
+function mostrarAvisoSaldo(mensagem){
+  removeWelcomeBlock();
+  const aviso = document.createElement('div');
+  aviso.className = 'aviso-credito';
+  aviso.innerHTML = `<span>⚠️ ${mensagem}</span>` + (KIWIFY_LINK ? `<a href="${KIWIFY_LINK}" target="_blank">Comprar mais</a>` : '');
+  chatEl.appendChild(aviso);
+  scrollToBottom();
+}
+
+function mostrarBloqueio(){
+  creditosBloqueado = true;
+  removeWelcomeBlock();
+  // desativa a barra de input
+  setInputsEnabled(false);
+  textInput.placeholder = 'Créditos esgotados';
+
+  const bloco = document.createElement('div');
+  bloco.className = 'bloqueio-credito';
+  bloco.innerHTML = `
+    <div class="bloqueio-icon">🎓</div>
+    <h3>Seus créditos acabaram!</h3>
+    <p>Você usou todas as suas mensagens com ${CONFIG ? CONFIG.nome : 'o professor'}. Garanta mais créditos para continuar aprendendo! ❤️</p>
+    ` + (KIWIFY_LINK ? `<a href="${KIWIFY_LINK}" target="_blank">Garantir mais mensagens</a>` : '');
+  chatEl.appendChild(bloco);
+  scrollToBottom();
+}
+
+async function descontarCredito(){
+  if(!alunoEmail) return { status: 'sem_email' };
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/descontar-credito`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: alunoEmail, professor_slug: PROFESSOR_SLUG })
+    });
+    const data = await res.json();
+    atualizarSaldoBadge(data.mensagens_restantes);
+    return data;
+  } catch(e) {
+    console.error('Erro ao descontar crédito:', e);
+    // Se der erro de rede, permite continuar (não bloqueia o usuário por problema técnico)
+    return { status: 'ok' };
+  }
+}
+
+/* ================= INDICAÇÃO ================= */
+
+// Captura o código de indicação da URL (ex: ?ref=AMOR4F2K), se presente
+function getCodigoIndicacaoDaURL(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get('ref');
+}
+
+// Gera (ou recupera) o código de indicação do aluno e atualiza a caixa nas configurações
+async function carregarMeuCodigoIndicacao(){
+  if(!alunoEmail) {
+    indicacaoBox.style.display = 'none';
+    return;
+  }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/gerar-codigo-indicacao`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: alunoEmail })
+    });
+    const data = await res.json();
+    if(data.codigo){
+      const link = `${window.location.origin}/${PROFESSOR_SLUG}?ref=${data.codigo}`;
+      linkIndicacaoInput.value = link;
+      indicacaoBox.style.display = 'block';
+    }
+  } catch(e) {
+    console.error('Erro ao carregar código de indicação:', e);
+  }
+}
+
+// Registra a indicação (se o aluno chegou via link de alguém) — chamado uma vez, ao salvar o e-mail
+async function registrarIndicacaoSeNecessario(){
+  const codigo = getCodigoIndicacaoDaURL();
+  if(!codigo || !alunoEmail) return;
+
+  // Evita registrar de novo se já tentamos nesta sessão/navegador
+  const jaTentou = localStorage.getItem(KEY_REF);
+  if(jaTentou === codigo) return;
+
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/registrar-indicacao`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email_indicado: alunoEmail, codigo: codigo, professor_slug: PROFESSOR_SLUG })
+    });
+    localStorage.setItem(KEY_REF, codigo);
+  } catch(e) {
+    console.error('Erro ao registrar indicação:', e);
+  }
+}
+
+copiarLinkBtn.onclick = () => {
+  linkIndicacaoInput.select();
+  linkIndicacaoInput.setSelectionRange(0, 99999); // mobile
+  try {
+    navigator.clipboard.writeText(linkIndicacaoInput.value);
+    copiarLinkBtn.textContent = 'Copiado!';
+    setTimeout(()=>{ copiarLinkBtn.textContent = 'Copiar'; }, 1800);
+  } catch(e) {
+    document.execCommand('copy');
+  }
+};
+
+/* ================= SEND MESSAGE / API CALL ================= */
+sendBtn.onclick = sendMessage;
+
+/* Retorna apenas as últimas MAX_HISTORICO_TROCAS trocas (usuário+professor),
+   para controlar o custo de API em conversas longas. O histórico completo continua
+   salvo e visível na tela — só o que é enviado para a API é reduzido.
+   Garante que o array sempre comece com uma mensagem do usuário, como a API exige. */
+function getMensagensParaAPI(){
+  const limiteDeItens = MAX_HISTORICO_TROCAS * 2; // cada troca = 1 user + 1 assistant
+  if(messages.length <= limiteDeItens) return messages;
+
+  let cortado = messages.slice(-limiteDeItens);
+  // se por algum motivo o corte começar com 'assistant', remove esse item solto
+  if(cortado.length > 0 && cortado[0].role !== 'user'){
+    cortado = cortado.slice(1);
+  }
+  return cortado;
+}
+
+async function sendMessage(){
+  if(isSending || creditosBloqueado || !CONFIG) return;
+  const text = textInput.value.trim();
+  if(!text && !pendingImage) return;
+
+  if(exigeConfiguracao()) return;
+
+  const userContentParts = [];
+  if(pendingImage){
+    userContentParts.push({
+      type: 'image',
+      source: { type: 'base64', media_type: pendingImage.mediaType, data: pendingImage.base64 }
+    });
+  }
+  if(text){
+    userContentParts.push({ type: 'text', text: text });
+  } else {
+    userContentParts.push({ type: 'text', text: '(enviei uma foto)' });
+  }
+
+  const imageForDisplay = pendingImage ? pendingImage.dataUrl : null;
+  addUserBubble(text, imageForDisplay);
+
+  messages.push({ role: 'user', content: userContentParts });
+  saveMessages();
+
+  textInput.value = '';
+  autoResize();
+  pendingImage = null;
+  previewBar.classList.remove('show');
+  cameraInput.value = '';
+  galleryInput.value = '';
+
+  isSending = true;
+  sendBtn.disabled = true;
+  const typingBubble = addAssistantBubble('', true);
+
+  try{
+    // 1. Desconta 1 crédito antes de chamar a IA
+    const credito = await descontarCredito();
+
+    if(credito.status === 'bloqueado' || credito.status === 'ultimo_credito_usado'){
+      typingBubble.remove();
+      mostrarBloqueio();
+      isSending = false;
+      return;
+    }
+
+    if(credito.aviso){
+      mostrarAvisoSaldo(credito.aviso);
+    }
+
+    // 2. Chama a Edge Function do Supabase. O system prompt é buscado no
+    //    servidor pelo professor_slug — nunca trafega até o navegador.
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/chat-anthropic`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1500,
+        professor_slug: PROFESSOR_SLUG,
+        messages: getMensagensParaAPI()
+      })
+    });
+
+    if(!response.ok){
+      const errBody = await response.json().catch(()=>({}));
+      throw new Error(errBody?.erro || `Erro ${response.status}`);
+    }
+
+    const data = await response.json();
+    const textBlocks = data.content.filter(c => c.type === 'text').map(c => c.text);
+    const fullText = textBlocks.join('\n');
+
+    messages.push({ role: 'assistant', content: fullText });
+    saveMessages();
+
+    typingBubble.innerHTML = '';
+    renderAssistantContent(typingBubble, fullText);
+    scrollToBottom();
+
+  }catch(err){
+    typingBubble.innerHTML = '';
+    typingBubble.style.color = '#a33';
+    typingBubble.textContent = '⚠️ Deu um erro: ' + err.message;
+  }finally{
+    isSending = false;
+    if(!creditosBloqueado) sendBtn.disabled = false;
+  }
+}
+
+function saveMessages(){
+  localStorage.setItem(KEY_MSGS, JSON.stringify(messages));
+}
+
+/* ================= SETTINGS MODAL ================= */
+openSettings.onclick = () => {
+  document.getElementById('modalTitle').textContent = 'Configurações';
+  document.getElementById('modalHint').textContent = 'Seu e-mail identifica sua conta e seus créditos, salvo só neste navegador.';
+  emailInput.value = alunoEmail;
+  settingsModal.classList.add('show');
+  if(alunoEmail){ carregarMeuCodigoIndicacao(); }
+};
+settingsModal.onclick = (e) => {
+  if(e.target === settingsModal){
+    settingsModal.classList.remove('show');
+    acaoPendente = null;
+  }
+};
+saveKeyBtn.onclick = () => {
+  alunoEmail = emailInput.value.trim().toLowerCase();
+  localStorage.setItem(KEY_EMAIL, alunoEmail);
+  updateStatus();
+  settingsModal.classList.remove('show');
+
+  if(!alunoEmail) return;
+
+  // Registra a indicação (se veio de um link de indicação) e carrega/gera o código próprio
+  registrarIndicacaoSeNecessario();
+  carregarMeuCodigoIndicacao();
+
+  // Retoma automaticamente a ação que o usuário tentou fazer antes de configurar o e-mail
+  if(acaoPendente){
+    const acao = acaoPendente;
+    acaoPendente = null;
+    acao();
+  } else if(chatEl.children.length === 0){
+    // Garantia extra: nunca deixar a tela vazia
+    renderAll();
+  }
+};
+clearChatBtn.onclick = () => {
+  if(confirm('Tem certeza que quer limpar toda a conversa?')){
+    messages = [];
+    localStorage.removeItem(KEY_MSGS);
+    renderAll();
+    settingsModal.classList.remove('show');
+  }
+};
+
+/* ================= INICIA ================= */
+boot();
+</script>
+
+</body>
+</html>

@@ -529,6 +529,93 @@
     flex-shrink: 0;
     background: var(--cream);
   }
+
+  /* ---------- TRILHA GAMIFICADA ---------- */
+  .trilha-wrap {
+    background: var(--cream-2);
+    border: 2px solid var(--gold);
+    border-radius: 18px;
+    padding: 14px 12px;
+    margin: 2px 0;
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .trilha-top { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .trilha-titulo { font-size: 17px; font-weight: 800; color: var(--wine); flex:1; line-height:1.3; }
+  .streak-chip {
+    background: linear-gradient(135deg, #ff9a3d, #ff6a3d);
+    color: white; font-size: 13px; font-weight: 800;
+    padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .progress-outer {
+    background: var(--cream); border: 2px solid var(--line);
+    border-radius: 999px; height: 16px; overflow: hidden; margin: 8px 0 4px;
+  }
+  .progress-inner {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--gold-2), var(--gold));
+    transition: width 0.5s ease;
+  }
+  .progress-label { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 10px; }
+  .modulos-grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 8px; }
+  .modulo-btn {
+    background:none; border:none; cursor:pointer; font-family:inherit;
+    display:flex; flex-direction:column; align-items:center; gap:6px; padding:4px 2px;
+  }
+  .modulo-btn .mcirc {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--cream); border: 3px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 30px; position: relative;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+    transition: transform 0.12s;
+  }
+  .modulo-btn:active .mcirc { transform: scale(0.94); }
+  .modulo-btn .mlabel { font-size: 12.5px; font-weight: 700; color: var(--ink); text-align:center; line-height:1.2; }
+  .modulo-btn.locked .mcirc { border-color: var(--line); filter: grayscale(0.7); opacity: 0.55; }
+  .modulo-btn.locked .mlabel { color: var(--ink-soft); opacity: 0.7; }
+  .modulo-btn.done .mcirc { border-color: #5c8a4f; background: #eef7ea; }
+  .modulo-btn .mbadge {
+    position:absolute; right:-4px; bottom:-4px; font-size:18px;
+    background: white; border-radius:50%; padding:1px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+  .simulado-btn {
+    width:100%; margin-top:14px; border:none; cursor:pointer; font-family:inherit;
+    background: linear-gradient(135deg, var(--gold-2), var(--gold));
+    color: var(--bg-deep); font-size:16px; font-weight:800;
+    padding: 14px 16px; border-radius: 14px;
+    display:flex; align-items:center; gap:10px; justify-content:center;
+  }
+  .simulado-btn:disabled { opacity:0.45; }
+  .simulado-btn:active { transform: scale(0.98); }
+  .trilha-acao {
+    width:100%; margin-top:10px; border:none; cursor:pointer; font-family:inherit;
+    font-size:16px; font-weight:700; padding: 13px 16px; border-radius: 13px;
+    display:flex; align-items:center; gap:10px; justify-content:center;
+  }
+  .trilha-acao.primaria { background: var(--wine); color: white; }
+  .trilha-acao.suave { background: var(--cream); color: var(--ink); border: 2px solid var(--line); }
+  .trilha-acao:active { transform: scale(0.98); }
+  .quiz-q { font-size: 17px; font-weight: 700; color: var(--ink); margin: 12px 2px 12px; line-height:1.45; }
+  .quiz-num { font-size: 13px; font-weight: 800; color: var(--ink-soft); letter-spacing:1px; }
+  .quiz-opt {
+    display:block; width:100%; text-align:left; cursor:pointer; font-family:inherit;
+    background: var(--cream); border: 2px solid var(--line); border-radius: 12px;
+    padding: 13px 16px; font-size: 16px; font-weight:600; color: var(--ink);
+    margin-bottom: 8px; transition: background 0.12s;
+  }
+  .quiz-opt:disabled { cursor: default; }
+  .quiz-opt.certa { background: #eef7ea; border-color: #5c8a4f; color: #2f5427; }
+  .quiz-opt.errada { background: #fdeaea; border-color: #c0564f; color: #7c2c27; }
+  .quiz-explica {
+    background: var(--cream); border-left: 4px solid var(--gold);
+    padding: 10px 14px; border-radius: 0 10px 10px 0;
+    font-size: 14.5px; color: var(--ink-soft); margin: 4px 0 8px; line-height:1.45;
+  }
+  .quiz-resultado { text-align:center; padding: 10px 4px 4px; }
+  .quiz-resultado .rscore { font-size: 40px; font-weight: 800; color: var(--wine); }
+  .quiz-resultado .rmsg { font-size: 16px; color: var(--ink); margin: 8px 0 4px; line-height:1.45; }
 </style>
 </head>
 <body>
@@ -620,6 +707,7 @@ let PILARES = [];
 let MAX_HISTORICO_TROCAS = 12;
 let KIWIFY_LINK = '';
 let AVATAR_SRC = '';
+let TRILHA = null;
 
 /* ================= STATE ================= */
 /* Chaves do localStorage separadas por professor (conversas não se misturam);
@@ -627,6 +715,8 @@ let AVATAR_SRC = '';
 const KEY_EMAIL = 'pia_email';
 const KEY_MSGS = 'pia_msgs_' + PROFESSOR_SLUG;
 const KEY_REF = 'pia_ref_' + PROFESSOR_SLUG;
+const KEY_TRILHA = 'pia_trilha_' + PROFESSOR_SLUG;
+const KEY_STREAK = 'pia_streak_' + PROFESSOR_SLUG;
 
 let alunoEmail = localStorage.getItem(KEY_EMAIL) || '';
 let messages = JSON.parse(localStorage.getItem(KEY_MSGS) || '[]');
@@ -726,6 +816,8 @@ async function boot(){
   PILARES = Array.isArray(CONFIG.catalogo) ? CONFIG.catalogo : [];
   MAX_HISTORICO_TROCAS = CONFIG.max_historico || 12;
   KIWIFY_LINK = CONFIG.kiwify_link || '';
+  TRILHA = (CONFIG.trilha && Array.isArray(CONFIG.trilha.modulos) && CONFIG.trilha.modulos.length > 0) ? CONFIG.trilha : null;
+  catalogBtn.style.display = (TRILHA || PILARES.length > 0) ? 'flex' : 'none';
   AVATAR_SRC = CONFIG.avatar_b64 ? ('data:image/png;base64,' + CONFIG.avatar_b64)
              : (CONFIG.avatar_url || '');
 
@@ -788,6 +880,9 @@ function renderWelcomeBlock(){
 
   block.appendChild(h2);
   block.appendChild(p);
+  if(TRILHA){
+    block.appendChild(buildTrilha());
+  }
   if(PILARES.length > 0){
     block.appendChild(buildCatalogGrid());
   }
@@ -1076,6 +1171,393 @@ function insertInlineCatalog(){
   scrollToBottom();
 }
 
+/* ================= TRILHA GAMIFICADA (Fase 1) =================
+   Recurso OPCIONAL dirigido pela ficha: só aparece se o professor tiver
+   o campo trilha preenchido. Progresso 100% no localStorage (por professor).
+   Quizzes e navegação são GRATUITOS; estudar com o professor e pedir
+   explicação de erros usam o chat normal (consomem crédito). */
+
+function getTrilhaProgresso(){
+  try { return JSON.parse(localStorage.getItem(KEY_TRILHA) || '{}'); }
+  catch(e){ return {}; }
+}
+function saveTrilhaProgresso(p){ localStorage.setItem(KEY_TRILHA, JSON.stringify(p)); }
+function moduloConcluido(id){ return (getTrilhaProgresso().concluidos || []).includes(id); }
+function concluirModulo(id){
+  const p = getTrilhaProgresso();
+  p.concluidos = p.concluidos || [];
+  if(!p.concluidos.includes(id)) p.concluidos.push(id);
+  saveTrilhaProgresso(p);
+}
+function moduloDesbloqueado(idx){
+  if(idx === 0) return true;
+  return moduloConcluido(TRILHA.modulos[idx-1].id);
+}
+function todosModulosConcluidos(){
+  return TRILHA.modulos.every(m => moduloConcluido(m.id));
+}
+
+/* ---- Streak (sequência de dias de estudo) ---- */
+function registrarAtividadeStreak(){
+  if(!TRILHA) return;
+  const hoje = new Date().toISOString().slice(0,10);
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(KEY_STREAK) || 'null'); } catch(e){}
+  if(!s || !s.dia){ s = { dia: hoje, seq: 1 }; }
+  else if(s.dia !== hoje){
+    const ontem = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+    s.seq = (s.dia === ontem) ? (s.seq + 1) : 1;
+    s.dia = hoje;
+  }
+  localStorage.setItem(KEY_STREAK, JSON.stringify(s));
+}
+function getStreak(){
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY_STREAK) || 'null');
+    if(!s || !s.dia) return 0;
+    const hoje = new Date().toISOString().slice(0,10);
+    const ontem = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+    return (s.dia === hoje || s.dia === ontem) ? s.seq : 0;
+  } catch(e){ return 0; }
+}
+
+/* ---- Confete de comemoração (biblioteca leve, carregada só quando precisa) ---- */
+function soltarConfete(forte){
+  const disparar = () => {
+    try {
+      window.confetti({ particleCount: forte ? 220 : 120, spread: forte ? 100 : 70, origin: { y: 0.6 } });
+    } catch(e){}
+  };
+  if(window.confetti){ disparar(); return; }
+  const sc = document.createElement('script');
+  sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js';
+  sc.onload = disparar;
+  document.head.appendChild(sc);
+}
+
+/* ---- Construção da trilha ---- */
+function buildTrilha(){
+  const wrap = document.createElement('div');
+  wrap.className = 'trilha-wrap';
+  const body = document.createElement('div');
+  wrap.appendChild(body);
+  mostrarTrilhaHome(wrap, body);
+  return wrap;
+}
+
+function insertInlineTrilha(){
+  if(!TRILHA) return;
+  removeWelcomeBlock();
+  chatEl.appendChild(buildTrilha());
+  scrollToBottom();
+}
+
+function mostrarTrilhaHome(wrap, body){
+  body.innerHTML = '';
+
+  const top = document.createElement('div');
+  top.className = 'trilha-top';
+  const t = document.createElement('div');
+  t.className = 'trilha-titulo';
+  t.textContent = TRILHA.titulo || '🎓 Sua trilha de aprovação';
+  top.appendChild(t);
+  const seq = getStreak();
+  if(seq > 0){
+    const chip = document.createElement('span');
+    chip.className = 'streak-chip';
+    chip.textContent = `🔥 ${seq} dia${seq > 1 ? 's' : ''}`;
+    top.appendChild(chip);
+  }
+  body.appendChild(top);
+
+  const total = TRILHA.modulos.length;
+  const feitos = TRILHA.modulos.filter(m => moduloConcluido(m.id)).length;
+  const barra = document.createElement('div');
+  barra.className = 'progress-outer';
+  const dentro = document.createElement('div');
+  dentro.className = 'progress-inner';
+  dentro.style.width = (total > 0 ? Math.round(100 * feitos / total) : 0) + '%';
+  barra.appendChild(dentro);
+  body.appendChild(barra);
+  const lbl = document.createElement('div');
+  lbl.className = 'progress-label';
+  lbl.textContent = `${feitos} de ${total} módulos concluídos`;
+  body.appendChild(lbl);
+
+  const grid = document.createElement('div');
+  grid.className = 'modulos-grid';
+  TRILHA.modulos.forEach((mod, idx) => {
+    const feito = moduloConcluido(mod.id);
+    const aberto = moduloDesbloqueado(idx);
+    const btn = document.createElement('button');
+    btn.className = 'modulo-btn' + (feito ? ' done' : '') + (!aberto ? ' locked' : '');
+    const circ = document.createElement('div');
+    circ.className = 'mcirc';
+    if(mod.cor && aberto) circ.style.borderColor = mod.cor;
+    circ.textContent = aberto ? (mod.emoji || '📚') : '🔒';
+    if(feito){
+      const bg = document.createElement('span');
+      bg.className = 'mbadge';
+      bg.textContent = '🏅';
+      circ.appendChild(bg);
+    }
+    const label = document.createElement('div');
+    label.className = 'mlabel';
+    label.textContent = mod.titulo;
+    btn.appendChild(circ);
+    btn.appendChild(label);
+    btn.onclick = () => {
+      if(!aberto){
+        alert('Conclua o módulo anterior para desbloquear este! 💪');
+        return;
+      }
+      mostrarModulo(wrap, body, mod, idx);
+      rolarParaTopoCatalogo(wrap);
+    };
+    grid.appendChild(btn);
+  });
+  body.appendChild(grid);
+
+  if(TRILHA.simulado && Array.isArray(TRILHA.simulado.perguntas) && TRILHA.simulado.perguntas.length > 0){
+    const p = getTrilhaProgresso();
+    const liberado = todosModulosConcluidos();
+    const sBtn = document.createElement('button');
+    sBtn.className = 'simulado-btn';
+    sBtn.disabled = !liberado;
+    sBtn.textContent = p.simulado_ok
+      ? '🎓 Simulado final: APROVADO! Refazer'
+      : (liberado ? '📝 ' + (TRILHA.simulado.titulo || 'Simulado final') : '🔒 Simulado final (conclua os módulos)');
+    sBtn.onclick = () => { mostrarSimulado(wrap, body); rolarParaTopoCatalogo(wrap); };
+    body.appendChild(sBtn);
+  }
+}
+
+function mostrarModulo(wrap, body, mod, idx){
+  body.innerHTML = '';
+
+  const t = document.createElement('div');
+  t.className = 'trilha-titulo';
+  t.textContent = `${mod.emoji || '📚'} ${mod.titulo}`;
+  body.appendChild(t);
+
+  if(mod.sub){
+    const s = document.createElement('div');
+    s.className = 'progress-label';
+    s.style.marginTop = '6px';
+    s.textContent = mod.sub;
+    body.appendChild(s);
+  }
+
+  if(moduloConcluido(mod.id)){
+    const ok = document.createElement('div');
+    ok.className = 'quiz-explica';
+    ok.textContent = '🏅 Módulo concluído! Você pode revisar ou refazer o desafio quando quiser.';
+    body.appendChild(ok);
+  }
+
+  const estudar = document.createElement('button');
+  estudar.className = 'trilha-acao primaria';
+  estudar.textContent = '📖 Estudar com o professor';
+  estudar.onclick = () => {
+    const continuar = () => {
+      textInput.value = mod.prompt_estudo || `Me ensina o módulo "${mod.titulo}" da trilha, passo a passo, do jeito que você ensina`;
+      sendMessage();
+    };
+    if(exigeConfiguracao(continuar)) return;
+    continuar();
+  };
+  body.appendChild(estudar);
+
+  if(mod.gate && Array.isArray(mod.gate.perguntas) && mod.gate.perguntas.length > 0){
+    const desafio = document.createElement('button');
+    desafio.className = 'trilha-acao suave';
+    desafio.textContent = '🎯 Fazer o desafio do módulo (grátis)';
+    desafio.onclick = () => {
+      const notaMin = mod.gate.nota_minima_pct || 80;
+      mostrarQuiz(wrap, body, {
+        titulo: `🎯 Desafio: ${mod.titulo}`,
+        perguntas: mod.gate.perguntas,
+        aprovou: (acertos, total) => (100 * acertos / total) >= notaMin,
+        metaTexto: `Meta: acertar pelo menos ${notaMin}%`,
+        nomeContexto: mod.titulo,
+        aoAprovar: () => {
+          concluirModulo(mod.id);
+          registrarAtividadeStreak();
+          soltarConfete(false);
+        },
+        msgAprovado: `🏅 Módulo "${mod.titulo}" concluído! Próximo módulo desbloqueado.`,
+        voltar: () => mostrarTrilhaHome(wrap, body)
+      });
+      rolarParaTopoCatalogo(wrap);
+    };
+    body.appendChild(desafio);
+  }
+
+  const voltar = document.createElement('button');
+  voltar.className = 'recipe-back-btn';
+  voltar.textContent = '← Voltar à trilha';
+  voltar.onclick = () => { mostrarTrilhaHome(wrap, body); rolarParaTopoCatalogo(wrap); };
+  body.appendChild(voltar);
+}
+
+function mostrarSimulado(wrap, body){
+  const sim = TRILHA.simulado;
+  const total = sim.perguntas.length;
+  const corte = sim.nota_corte || Math.ceil(total * 0.9);
+  mostrarQuiz(wrap, body, {
+    titulo: '📝 ' + (sim.titulo || 'Simulado final'),
+    perguntas: sim.perguntas,
+    aprovou: (acertos) => acertos >= corte,
+    metaTexto: `Meta interna: ${corte} de ${total} (mais exigente que a prova oficial — pra você ir com folga!)`,
+    nomeContexto: 'simulado final',
+    aoAprovar: () => {
+      const p = getTrilhaProgresso();
+      p.simulado_ok = true;
+      saveTrilhaProgresso(p);
+      registrarAtividadeStreak();
+      soltarConfete(true);
+    },
+    msgAprovado: sim.msg_aprovado || '🎉 PARABÉNS! Pela nossa régua (mais exigente que a oficial), você está pronto pra agendar sua prova teórica!',
+    voltar: () => mostrarTrilhaHome(wrap, body)
+  });
+}
+
+/* Quiz genérico: usado pelos gates dos módulos e pelo simulado.
+   cfg = { titulo, perguntas, aprovou(acertos,total), metaTexto, nomeContexto,
+           aoAprovar(), msgAprovado, voltar() } */
+function mostrarQuiz(wrap, body, cfg){
+  let i = 0, acertos = 0;
+  const erradas = [];
+
+  function renderPergunta(){
+    body.innerHTML = '';
+
+    const t = document.createElement('div');
+    t.className = 'trilha-titulo';
+    t.textContent = cfg.titulo;
+    body.appendChild(t);
+
+    if(cfg.metaTexto){
+      const meta = document.createElement('div');
+      meta.className = 'progress-label';
+      meta.style.marginTop = '4px';
+      meta.textContent = cfg.metaTexto;
+      body.appendChild(meta);
+    }
+
+    const q = cfg.perguntas[i];
+
+    const num = document.createElement('div');
+    num.className = 'quiz-num';
+    num.style.marginTop = '10px';
+    num.textContent = `PERGUNTA ${i+1} DE ${cfg.perguntas.length}`;
+    body.appendChild(num);
+
+    const enun = document.createElement('div');
+    enun.className = 'quiz-q';
+    enun.textContent = q.p;
+    body.appendChild(enun);
+
+    const botoes = [];
+    q.alternativas.forEach((alt, ai) => {
+      const opt = document.createElement('button');
+      opt.className = 'quiz-opt';
+      opt.textContent = alt;
+      opt.onclick = () => {
+        botoes.forEach(x => x.disabled = true);
+        const certaIdx = q.correta;
+        if(ai === certaIdx){
+          opt.classList.add('certa');
+          acertos++;
+        } else {
+          opt.classList.add('errada');
+          botoes[certaIdx].classList.add('certa');
+          erradas.push(q.p);
+        }
+        if(q.explicacao){
+          const ex = document.createElement('div');
+          ex.className = 'quiz-explica';
+          ex.textContent = '💡 ' + q.explicacao;
+          body.insertBefore(ex, prox);
+        }
+        prox.style.display = 'flex';
+      };
+      botoes.push(opt);
+      body.appendChild(opt);
+    });
+
+    const prox = document.createElement('button');
+    prox.className = 'trilha-acao primaria';
+    prox.style.display = 'none';
+    prox.textContent = (i < cfg.perguntas.length - 1) ? 'Próxima →' : 'Ver resultado 🏁';
+    prox.onclick = () => {
+      i++;
+      if(i < cfg.perguntas.length){ renderPergunta(); }
+      else { renderResultado(); }
+      rolarParaTopoCatalogo(wrap);
+    };
+    body.appendChild(prox);
+  }
+
+  function renderResultado(){
+    body.innerHTML = '';
+    const total = cfg.perguntas.length;
+    const passou = cfg.aprovou(acertos, total);
+
+    const res = document.createElement('div');
+    res.className = 'quiz-resultado';
+    const score = document.createElement('div');
+    score.className = 'rscore';
+    score.textContent = `${acertos}/${total}`;
+    res.appendChild(score);
+    const msg = document.createElement('div');
+    msg.className = 'rmsg';
+    msg.textContent = passou
+      ? cfg.msgAprovado
+      : `Quase lá! Você acertou ${acertos} de ${total}. Errar faz parte do treino — bora revisar e tentar de novo. 💪`;
+    res.appendChild(msg);
+    body.appendChild(res);
+
+    if(passou){
+      cfg.aoAprovar();
+      const voltar = document.createElement('button');
+      voltar.className = 'trilha-acao primaria';
+      voltar.textContent = '🎉 Voltar à trilha';
+      voltar.onclick = () => { cfg.voltar(); rolarParaTopoCatalogo(wrap); };
+      body.appendChild(voltar);
+    } else {
+      if(erradas.length > 0){
+        const explicar = document.createElement('button');
+        explicar.className = 'trilha-acao primaria';
+        explicar.textContent = '🧠 Me explica o que eu errei de outro jeito';
+        explicar.onclick = () => {
+          const continuar = () => {
+            const lista = erradas.slice(0, 5).map(e => `"${e}"`).join('; ');
+            textInput.value = `Errei estas questões sobre ${cfg.nomeContexto}: ${lista}. Me explica esses pontos de um jeito diferente e mais simples, por favor.`;
+            sendMessage();
+          };
+          if(exigeConfiguracao(continuar)) return;
+          continuar();
+        };
+        body.appendChild(explicar);
+      }
+      const denovo = document.createElement('button');
+      denovo.className = 'trilha-acao suave';
+      denovo.textContent = '🔁 Tentar de novo (grátis)';
+      denovo.onclick = () => { i = 0; acertos = 0; erradas.length = 0; renderPergunta(); rolarParaTopoCatalogo(wrap); };
+      body.appendChild(denovo);
+
+      const voltar = document.createElement('button');
+      voltar.className = 'recipe-back-btn';
+      voltar.textContent = '← Voltar à trilha';
+      voltar.onclick = () => { cfg.voltar(); rolarParaTopoCatalogo(wrap); };
+      body.appendChild(voltar);
+    }
+  }
+
+  renderPergunta();
+}
+
 function renderStoredMessage(m){
   if(m.role === 'user'){
     addUserBubble(extractTextFromContent(m.content), extractImageFromContent(m.content));
@@ -1264,7 +1746,7 @@ async function handleFileSelected(file){
 
 cameraBtn.onclick = () => cameraInput.click();
 galleryBtn.onclick = () => galleryInput.click();
-catalogBtn.onclick = () => insertInlineCatalog();
+catalogBtn.onclick = () => { if(TRILHA){ insertInlineTrilha(); } else { insertInlineCatalog(); } };
 cameraInput.onchange = (e) => handleFileSelected(e.target.files[0]);
 galleryInput.onchange = (e) => handleFileSelected(e.target.files[0]);
 removePreview.onclick = () => {
@@ -1562,6 +2044,7 @@ async function sendMessage(){
 
     messages.push({ role: 'assistant', content: fullText });
     saveMessages();
+    registrarAtividadeStreak();
 
     typingBubble.innerHTML = '';
     renderAssistantContent(typingBubble, fullText);

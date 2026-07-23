@@ -194,6 +194,9 @@
   .pilar-btn.featured { background: linear-gradient(135deg, var(--gold-2), var(--gold)); border-color: var(--gold); }
   .pilar-btn.featured .ptitulo { color: var(--bg-deep); }
   .pilar-btn.featured .psub { color: #5a3a10; }
+  .pilar-btn.locked { opacity: 0.62; }
+  .pilar-btn.locked .ptitulo { color: var(--ink-soft); }
+  .pilar-btn.locked .picon { filter: grayscale(0.6); }
   .region-title {
     font-size: 15px;
     font-weight: 800;
@@ -931,6 +934,50 @@ function rolarParaTopoCatalogo(wrap){
   requestAnimationFrame(()=>{ wrap.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
 }
 
+/* Verifica se algum módulo da trilha ainda não concluído é pré-requisito
+   deste item do catálogo (campo trilha.modulos[].desbloqueia_catalogo).
+   Retorna o módulo em questão (para orientar o aluno) ou null se liberado. */
+function getModuloQueDesbloqueia(itemId){
+  if(!TRILHA || !itemId) return null;
+  for(const m of TRILHA.modulos){
+    if(Array.isArray(m.desbloqueia_catalogo) && m.desbloqueia_catalogo.includes(itemId) && !moduloConcluido(m.id)){
+      return m;
+    }
+  }
+  return null;
+}
+
+/* Tela de bloqueio amigável de um item do catálogo — mesma ideia do bloqueio
+   de módulo da trilha, mas em texto acolhedor (não é erro de sistema). */
+function mostrarBloqueioItem(wrap, body, pilar, modulo){
+  body.innerHTML = '';
+
+  const label = document.createElement('div');
+  label.className = 'inline-catalog-label';
+  label.textContent = `${pilar.emoji || '🔒'} ${pilar.titulo}`;
+  body.appendChild(label);
+
+  const msg = document.createElement('div');
+  msg.className = 'quiz-explica';
+  msg.textContent = `Pra eu montar isso com você direitinho, preciso que você passe pelo módulo de "${modulo.titulo}" primeiro — é rapidinho e é o que vai fazer seu plano fazer sentido de verdade.`;
+  body.appendChild(msg);
+
+  const irBtn = document.createElement('button');
+  irBtn.className = 'trilha-acao primaria';
+  irBtn.textContent = `${modulo.emoji || '📚'} Ir pro módulo "${modulo.titulo}"`;
+  irBtn.onclick = () => {
+    const trilhaWrap = document.querySelector('.trilha-wrap');
+    if(trilhaWrap){ trilhaWrap.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  };
+  body.appendChild(irBtn);
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'recipe-back-btn';
+  backBtn.textContent = '← Voltar ao cardápio';
+  backBtn.onclick = () => { mostrarPilares(wrap, body); rolarParaTopoCatalogo(wrap); };
+  body.appendChild(backBtn);
+}
+
 /* Nível 1: os pilares do cardápio (menu inicial enxuto) */
 function mostrarPilares(wrap, body){
   body.innerHTML = '';
@@ -944,12 +991,13 @@ function mostrarPilares(wrap, body){
   list.className = 'pilar-list';
 
   PILARES.forEach(pilar => {
+    const moduloFaltando = pilar.id ? getModuloQueDesbloqueia(pilar.id) : null;
     const btn = document.createElement('button');
-    btn.className = 'pilar-btn' + (pilar.featured ? ' featured' : '');
+    btn.className = 'pilar-btn' + (pilar.featured ? ' featured' : '') + (moduloFaltando ? ' locked' : '');
 
     const icon = document.createElement('span');
     icon.className = 'picon';
-    icon.textContent = pilar.emoji || '📚';
+    icon.textContent = moduloFaltando ? '🔒' : (pilar.emoji || '📚');
 
     const textos = document.createElement('div');
     const t = document.createElement('div');
@@ -966,6 +1014,24 @@ function mostrarPilares(wrap, body){
     btn.appendChild(icon);
     btn.appendChild(textos);
     btn.onclick = () => {
+      if(moduloFaltando){
+        mostrarBloqueioItem(wrap, body, pilar, moduloFaltando);
+        rolarParaTopoCatalogo(wrap);
+        return;
+      }
+      if(pilar.foco_input){
+        textInput.focus();
+        return;
+      }
+      if(pilar.prompt){
+        const continuar = () => {
+          textInput.value = pilar.prompt;
+          sendMessage();
+        };
+        if(exigeConfiguracao(continuar)) return;
+        continuar();
+        return;
+      }
       if(pilar.regioes){
         mostrarEstados(wrap, body, pilar);
       } else if(pilar.categorias){
@@ -1163,11 +1229,13 @@ function mostrarPratosSimples(wrap, body, pilar){
   body.appendChild(backBtn);
 }
 
-/* Inserts the catalog as its own row inside the conversation flow */
-function insertInlineCatalog(){
-  if(PILARES.length === 0) return;
+/* Insere a trilha e/ou o catálogo no fluxo da conversa (chamado pelo botão 📋).
+   Mostra os dois blocos quando o professor tiver ambos (ex.: Mestre do Shape);
+   mostra só o que existir nos demais casos — mesmo comportamento de antes. */
+function insertInlineTrilhaECatalogo(){
   removeWelcomeBlock();
-  chatEl.appendChild(buildCatalogGrid());
+  if(TRILHA){ chatEl.appendChild(buildTrilha()); }
+  if(PILARES.length > 0){ chatEl.appendChild(buildCatalogGrid()); }
   scrollToBottom();
 }
 
@@ -1746,7 +1814,7 @@ async function handleFileSelected(file){
 
 cameraBtn.onclick = () => cameraInput.click();
 galleryBtn.onclick = () => galleryInput.click();
-catalogBtn.onclick = () => { if(TRILHA){ insertInlineTrilha(); } else { insertInlineCatalog(); } };
+catalogBtn.onclick = () => { insertInlineTrilhaECatalogo(); };
 cameraInput.onchange = (e) => handleFileSelected(e.target.files[0]);
 galleryInput.onchange = (e) => handleFileSelected(e.target.files[0]);
 removePreview.onclick = () => {

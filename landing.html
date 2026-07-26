@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Professores de IA — Conhecimento humano real, potencializado por IA</title>
 <meta name="description" content="Professores de IA são treinadores digitais com método, ciência e experiência humana real por trás — não chatbots genéricos. Um produto da Escola Cérebros Brilhantes.">
+<link rel="icon" type="image/png" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Professores de IA — Conhecimento humano real, potencializado por IA">
+<meta property="og:description" content="Treinadores digitais com método, ciência e experiência humana real por trás. Um produto da Escola Cérebros Brilhantes.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -105,18 +113,35 @@
     padding: 90px 22px 60px;
   }
 
-  .emblem{ width: 148px; height: 148px; margin-bottom: 30px; }
-  .emblem svg{ width: 100%; height: 100%; }
-  .emblem-ring{ animation: girarLento 90s linear infinite; transform-origin: 100px 100px; }
-  .emblem-core{ animation: pulsar 2.6s ease-in-out infinite alternate; transform-origin: 100px 100px; }
+  .emblem{
+    width: 176px; height: 176px;
+    margin-bottom: 30px;
+    position: relative;
+    border-radius: 50%;
+  }
+  .emblem-glow{
+    position: absolute; inset: -18px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,224,138,0.35), transparent 70%);
+    animation: pulsar 2.6s ease-in-out infinite alternate;
+    z-index: 0;
+  }
+  .emblem img{
+    position: relative;
+    z-index: 1;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    animation: girarLento 140s linear infinite;
+  }
   @keyframes girarLento{ to{ transform: rotate(360deg); } }
   @keyframes pulsar{
-    from{ opacity: 0.55; filter: drop-shadow(0 0 2px rgba(255,224,138,0.5)); }
-    to{ opacity: 1; filter: drop-shadow(0 0 10px rgba(255,224,138,0.85)); }
+    from{ opacity: 0.4; transform: scale(0.94); }
+    to{ opacity: 0.85; transform: scale(1.04); }
   }
   @media (prefers-reduced-motion: reduce){
-    .emblem-ring{ animation: none; }
-    .emblem-core{ animation: none; opacity: 0.9; }
+    .emblem img{ animation: none; }
+    .emblem-glow{ animation: none; opacity: 0.6; }
   }
 
   .hero .eyebrow{ margin-bottom: 22px; }
@@ -469,58 +494,8 @@
 <!-- ============ HERO ============ -->
 <section class="hero">
   <div class="emblem" aria-hidden="true">
-    <svg viewBox="0 0 200 200" fill="none">
-      <defs>
-        <linearGradient id="silverLine" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#eef1f6"/>
-          <stop offset="50%" stop-color="#8a90a3"/>
-          <stop offset="100%" stop-color="#eef1f6"/>
-        </linearGradient>
-        <radialGradient id="goldCore" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#ffe08a"/>
-          <stop offset="100%" stop-color="#a9791f"/>
-        </radialGradient>
-      </defs>
-
-      <g class="emblem-ring">
-        <circle cx="100" cy="100" r="92" stroke="url(#silverLine)" stroke-width="1" opacity="0.55"/>
-        <circle cx="100" cy="100" r="74" stroke="url(#silverLine)" stroke-width="1" stroke-dasharray="2 7" opacity="0.5"/>
-        <!-- linhas de circuito conectando nós ao redor -->
-        <path d="M100 26 L100 8 M100 174 L100 192 M26 100 L8 100 M174 100 L192 100
-                 M52 52 L41 41 M148 52 L159 41 M52 148 L41 159 M148 148 L159 159"
-              stroke="url(#silverLine)" stroke-width="1.2" opacity="0.7"/>
-        <circle cx="100" cy="8" r="3.4" fill="#ffe08a"/>
-        <circle cx="100" cy="192" r="3.4" fill="#ffe08a"/>
-        <circle cx="8" cy="100" r="3.4" fill="#c7ccd8"/>
-        <circle cx="192" cy="100" r="3.4" fill="#c7ccd8"/>
-        <circle cx="41" cy="41" r="2.6" fill="#c7ccd8"/>
-        <circle cx="159" cy="41" r="2.6" fill="#c7ccd8"/>
-        <circle cx="41" cy="159" r="2.6" fill="#c7ccd8"/>
-        <circle cx="159" cy="159" r="2.6" fill="#c7ccd8"/>
-      </g>
-
-      <!-- miolo: forma de "cérebro/brasão" simplificada em linhas -->
-      <g class="emblem-core">
-        <path d="M100 56
-                 C82 56 68 68 66 84
-                 C58 87 53 95 54 104
-                 C48 108 46 116 50 124
-                 C49 133 55 141 64 143
-                 C66 152 74 158 84 158
-                 L100 158
-                 L116 158
-                 C126 158 134 152 136 143
-                 C145 141 151 133 150 124
-                 C154 116 152 108 146 104
-                 C147 95 142 87 134 84
-                 C132 68 118 56 100 56 Z"
-              stroke="url(#goldCore)" stroke-width="2" fill="rgba(212,175,55,0.05)"/>
-        <path d="M100 66 L100 150 M78 84 C78 84 90 92 100 92 C110 92 122 84 122 84
-                  M72 108 L128 108 M76 128 L124 128"
-              stroke="url(#goldCore)" stroke-width="1.3" opacity="0.85"/>
-        <circle cx="100" cy="108" r="5.5" fill="#ffe08a"/>
-      </g>
-    </svg>
+    <div class="emblem-glow"></div>
+    <img src="/emblema-professores-de-ia.png" alt="">
   </div>
 
   <span class="eyebrow">Escola Cérebros Brilhantes apresenta</span>
@@ -603,10 +578,7 @@
 <!-- ============ FOOTER ============ -->
 <footer>
   <div class="footer-emblem" aria-hidden="true">
-    <svg viewBox="0 0 200 200" fill="none">
-      <circle cx="100" cy="100" r="92" stroke="#6b7080" stroke-width="1.5"/>
-      <path d="M100 56 C82 56 68 68 66 84 C58 87 53 95 54 104 C48 108 46 116 50 124 C49 133 55 141 64 143 C66 152 74 158 84 158 L116 158 C126 158 134 152 136 143 C145 141 151 133 150 124 C154 116 152 108 146 104 C147 95 142 87 134 84 C132 68 118 56 100 56 Z" stroke="#d4af37" stroke-width="2.5"/>
-    </svg>
+    <img src="/emblema-professores-de-ia.png" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
   </div>
   <p class="linha1">Professores de IA é um produto da <b>Escola Cérebros Brilhantes</b>.</p>
   <p class="linha2">© <span id="anoAtual"></span> — Todos os professores em um só lugar.</p>

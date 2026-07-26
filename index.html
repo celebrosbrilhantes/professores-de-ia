@@ -578,6 +578,22 @@
   .modulo-btn.locked .mcirc { border-color: var(--line); filter: grayscale(0.7); opacity: 0.55; }
   .modulo-btn.locked .mlabel { color: var(--ink-soft); opacity: 0.7; }
   .modulo-btn.done .mcirc { border-color: #5c8a4f; background: #eef7ea; }
+  .modulo-btn.checkpoint .mcirc { border-style: dashed; }
+  .categoria-header {
+    font-size: 13.5px; font-weight: 800; letter-spacing: 0.6px;
+    color: var(--wine); margin: 18px 2px 8px; padding-bottom: 5px;
+    border-bottom: 2px dashed var(--line); text-transform: uppercase;
+  }
+  .categoria-header:first-child { margin-top: 4px; }
+  .modulo-concluido-card {
+    margin-top: 10px;
+    background: linear-gradient(135deg, var(--gold-2), var(--gold));
+    color: var(--bg-deep);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 15.5px;
+    font-weight: 700;
+  }
   .modulo-btn .mbadge {
     position:absolute; right:-4px; bottom:-4px; font-size:18px;
     background: white; border-radius:50%; padding:1px;
@@ -1320,6 +1336,40 @@ function insertInlineTrilha(){
   scrollToBottom();
 }
 
+/* Agrupa os módulos por categoria (campo opcional 'categoria' em cada módulo).
+   Professores sem esse campo caem todos num grupo único implícito — o visual
+   fica idêntico ao de antes (sem cabeçalho de categoria, uma trilha só).
+   Quando existe mais de uma categoria (trilhas em paralelo, ex: Mente Ativa),
+   cada uma vira um bloco próprio com sua própria barra de progresso, e o
+   desbloqueio sequencial passa a valer só dentro da mesma categoria. */
+function agruparModulosPorCategoria(){
+  const grupos = {};
+  const ordemGrupos = [];
+  TRILHA.modulos.forEach((mod, idxGlobal) => {
+    const cat = mod.categoria || '__unica__';
+    if(!grupos[cat]){ grupos[cat] = []; ordemGrupos.push(cat); }
+    grupos[cat].push({ mod, idxGlobal });
+  });
+  ordemGrupos.forEach(cat => {
+    grupos[cat].sort((a, b) => (a.mod.ordem || 0) - (b.mod.ordem || 0));
+  });
+  return { grupos, ordemGrupos };
+}
+
+function getCategoriaMeta(catId){
+  if(TRILHA.categorias){
+    const achou = TRILHA.categorias.find(c => c.id === catId);
+    if(achou) return achou;
+  }
+  const nome = catId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return { id: catId, nome, emoji: '🧠' };
+}
+
+function moduloDesbloqueadoNoGrupo(itensDoGrupo, posNoGrupo){
+  if(posNoGrupo === 0) return true;
+  return moduloConcluido(itensDoGrupo[posNoGrupo - 1].mod.id);
+}
+
 function mostrarTrilhaHome(wrap, body){
   body.innerHTML = '';
 
@@ -1338,53 +1388,69 @@ function mostrarTrilhaHome(wrap, body){
   }
   body.appendChild(top);
 
-  const total = TRILHA.modulos.length;
-  const feitos = TRILHA.modulos.filter(m => moduloConcluido(m.id)).length;
-  const barra = document.createElement('div');
-  barra.className = 'progress-outer';
-  const dentro = document.createElement('div');
-  dentro.className = 'progress-inner';
-  dentro.style.width = (total > 0 ? Math.round(100 * feitos / total) : 0) + '%';
-  barra.appendChild(dentro);
-  body.appendChild(barra);
-  const lbl = document.createElement('div');
-  lbl.className = 'progress-label';
-  lbl.textContent = `${feitos} de ${total} módulos concluídos`;
-  body.appendChild(lbl);
+  const { grupos, ordemGrupos } = agruparModulosPorCategoria();
+  const mostrarCabecalhosCategoria = ordemGrupos.length > 1;
 
-  const grid = document.createElement('div');
-  grid.className = 'modulos-grid';
-  TRILHA.modulos.forEach((mod, idx) => {
-    const feito = moduloConcluido(mod.id);
-    const aberto = moduloDesbloqueado(idx);
-    const btn = document.createElement('button');
-    btn.className = 'modulo-btn' + (feito ? ' done' : '') + (!aberto ? ' locked' : '');
-    const circ = document.createElement('div');
-    circ.className = 'mcirc';
-    if(mod.cor && aberto) circ.style.borderColor = mod.cor;
-    circ.textContent = aberto ? (mod.emoji || '📚') : '🔒';
-    if(feito){
-      const bg = document.createElement('span');
-      bg.className = 'mbadge';
-      bg.textContent = '🏅';
-      circ.appendChild(bg);
+  ordemGrupos.forEach(catId => {
+    const itens = grupos[catId];
+
+    if(mostrarCabecalhosCategoria){
+      const meta = getCategoriaMeta(catId);
+      const catHeader = document.createElement('div');
+      catHeader.className = 'categoria-header';
+      catHeader.textContent = `${meta.emoji || '🧠'} ${meta.nome}`;
+      body.appendChild(catHeader);
     }
-    const label = document.createElement('div');
-    label.className = 'mlabel';
-    label.textContent = mod.titulo;
-    btn.appendChild(circ);
-    btn.appendChild(label);
-    btn.onclick = () => {
-      if(!aberto){
-        alert('Conclua o módulo anterior para desbloquear este! 💪');
-        return;
+
+    const total = itens.length;
+    const feitos = itens.filter(it => moduloConcluido(it.mod.id)).length;
+    const barra = document.createElement('div');
+    barra.className = 'progress-outer';
+    const dentro = document.createElement('div');
+    dentro.className = 'progress-inner';
+    dentro.style.width = (total > 0 ? Math.round(100 * feitos / total) : 0) + '%';
+    barra.appendChild(dentro);
+    body.appendChild(barra);
+    const lbl = document.createElement('div');
+    lbl.className = 'progress-label';
+    lbl.textContent = `${feitos} de ${total} módulos concluídos`;
+    body.appendChild(lbl);
+
+    const grid = document.createElement('div');
+    grid.className = 'modulos-grid';
+    itens.forEach((it, posNoGrupo) => {
+      const mod = it.mod;
+      const feito = moduloConcluido(mod.id);
+      const aberto = moduloDesbloqueadoNoGrupo(itens, posNoGrupo);
+      const btn = document.createElement('button');
+      btn.className = 'modulo-btn' + (feito ? ' done' : '') + (!aberto ? ' locked' : '') + (mod.tipo === 'checkpoint_dominio' ? ' checkpoint' : '');
+      const circ = document.createElement('div');
+      circ.className = 'mcirc';
+      if(mod.cor && aberto) circ.style.borderColor = mod.cor;
+      circ.textContent = aberto ? (mod.emoji || '📚') : '🔒';
+      if(feito){
+        const bg = document.createElement('span');
+        bg.className = 'mbadge';
+        bg.textContent = mod.tipo === 'checkpoint_dominio' ? '🏆' : '🏅';
+        circ.appendChild(bg);
       }
-      mostrarModulo(wrap, body, mod, idx);
-      rolarParaTopoCatalogo(wrap);
-    };
-    grid.appendChild(btn);
+      const label = document.createElement('div');
+      label.className = 'mlabel';
+      label.textContent = mod.titulo;
+      btn.appendChild(circ);
+      btn.appendChild(label);
+      btn.onclick = () => {
+        if(!aberto){
+          alert('Conclua o módulo anterior para desbloquear este! 💪');
+          return;
+        }
+        mostrarModulo(wrap, body, mod, it.idxGlobal);
+        rolarParaTopoCatalogo(wrap);
+      };
+      grid.appendChild(btn);
+    });
+    body.appendChild(grid);
   });
-  body.appendChild(grid);
 
   if(TRILHA.simulado && Array.isArray(TRILHA.simulado.perguntas) && TRILHA.simulado.perguntas.length > 0){
     const p = getTrilhaProgresso();
@@ -1705,7 +1771,7 @@ function addAssistantBubble(text, isTyping, skipTimers){
 }
 
 function renderAssistantContent(bubble, text, skipTimers){
-  const markerRegex = /\[TIMER:\s*(\d+)\s*\|\s*([^\]]+)\]|\[CATALOGO\]/g;
+  const markerRegex = /\[TIMER:\s*(\d+)\s*\|\s*([^\]]+)\]|\[CATALOGO\]|\[MODULO_CONCLUIDO:\s*([a-zA-Z0-9_-]+)\]/g;
   let lastIndex = 0;
   let match;
   const fragments = [];
@@ -1713,6 +1779,8 @@ function renderAssistantContent(bubble, text, skipTimers){
     fragments.push({type:'text', value: text.slice(lastIndex, match.index)});
     if(match[0] === '[CATALOGO]'){
       fragments.push({type:'catalog'});
+    } else if(match[3]){
+      fragments.push({type:'modulo_concluido', moduloId: match[3]});
     } else {
       fragments.push({type:'timer', seconds: parseInt(match[1]), label: match[2].trim()});
     }
@@ -1733,8 +1801,43 @@ function renderAssistantContent(bubble, text, skipTimers){
       if(PILARES.length === 0) return;
       bubble.classList.add('bubble-catalogo');
       bubble.appendChild(buildCatalogGrid());
+    } else if(f.type === 'modulo_concluido'){
+      bubble.appendChild(buildModuloConcluidoCard(f.moduloId));
     }
   });
+}
+
+/* Marcador [MODULO_CONCLUIDO: id] — usado quando a conclusão de um módulo
+   não pode ser aferida por quiz automático (ex: checkpoint de domínio
+   avaliado por interpretação em conversa). O professor escreve esse
+   marcador quando decide que o aluno cumpriu o módulo; o app registra a
+   conclusão, o streak e a comemoração — igual já acontece com [TIMER: ...]. */
+function buildModuloConcluidoCard(moduloId){
+  const card = document.createElement('div');
+  card.className = 'modulo-concluido-card';
+  let mod = null;
+  if(TRILHA){ mod = TRILHA.modulos.find(m => m.id === moduloId); }
+
+  if(!moduloConcluido(moduloId)){
+    concluirModulo(moduloId);
+    registrarAtividadeStreak();
+    soltarConfete(true);
+  }
+  atualizarTrilhaSeVisivel();
+
+  card.textContent = mod ? `🏆 Módulo concluído: ${mod.titulo}` : '🏆 Módulo concluído!';
+  return card;
+}
+
+/* Se a trilha já estiver desenhada na tela (ex: bloco combinado com o
+   catálogo), redesenha na hora pra barra de progresso e o cadeado do
+   próximo módulo atualizarem sem o aluno precisar sair e voltar. */
+function atualizarTrilhaSeVisivel(){
+  const antigo = document.querySelector('.trilha-wrap');
+  if(antigo && TRILHA){
+    const novo = buildTrilha();
+    antigo.replaceWith(novo);
+  }
 }
 
 function buildTimerCard(totalSeconds, label){

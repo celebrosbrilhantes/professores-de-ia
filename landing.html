@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Professores de IA — Conhecimento humano real, potencializado por IA</title>
+<meta name="description" content="Professores de IA são treinadores digitais com método, ciência e experiência humana real por trás — não chatbots genéricos. Um produto da Escola Cérebros Brilhantes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0b0f;
+    --bg-2: #121319;
+    --bg-3: #181a22;
+    --silver: #c7ccd8;
+    --silver-bright: #f2f4f8;
+    --silver-dim: #6b7080;
+    --gold: #d4af37;
+    --gold-bright: #ffe08a;
+    --gold-deep: #a9791f;
+    --ink-soft: #8a90a3;
+    --line: rgba(199,204,216,0.14);
+    --line-gold: rgba(212,175,55,0.35);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin: 0;
+    background: var(--bg);
+    color: var(--silver);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* fundo com textura sutil de "circuito" — muito discreto, não pode poluir */
+  .grain-bg{
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 900px 600px at 15% -5%, rgba(212,175,55,0.07), transparent 60%),
+      radial-gradient(ellipse 800px 700px at 100% 15%, rgba(199,204,216,0.05), transparent 55%),
+      radial-gradient(ellipse 700px 500px at 50% 100%, rgba(212,175,55,0.05), transparent 60%);
+  }
+
+  section{ position: relative; z-index: 1; }
+
+  .wrap{ max-width: 1080px; margin: 0 auto; padding: 0 22px; }
+
+  /* ---------- utilitários de texto metálico ---------- */
+  .metal-gold{
+    background: linear-gradient(100deg, var(--gold-deep) 0%, var(--gold-bright) 22%, var(--gold) 45%, var(--gold-bright) 60%, var(--gold-deep) 85%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 7s ease-in-out infinite;
+  }
+  .metal-silver{
+    background: linear-gradient(100deg, var(--silver-dim) 0%, var(--silver-bright) 25%, var(--silver) 50%, var(--silver-bright) 65%, var(--silver-dim) 88%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 7s ease-in-out infinite;
+  }
+  @keyframes shimmer{
+    0%{ background-position: 0% 50%; }
+    50%{ background-position: 100% 50%; }
+    100%{ background-position: 0% 50%; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .metal-gold, .metal-silver{ animation: none; background-position: 35% 50%; }
+  }
+
+  .eyebrow{
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before{
+    content: "";
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--gold-bright);
+    box-shadow: 0 0 8px 1px var(--gold);
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 90px 22px 60px;
+  }
+
+  .emblem{ width: 148px; height: 148px; margin-bottom: 30px; }
+  .emblem svg{ width: 100%; height: 100%; }
+  .emblem-ring{ animation: girarLento 90s linear infinite; transform-origin: 100px 100px; }
+  .emblem-core{ animation: pulsar 2.6s ease-in-out infinite alternate; transform-origin: 100px 100px; }
+  @keyframes girarLento{ to{ transform: rotate(360deg); } }
+  @keyframes pulsar{
+    from{ opacity: 0.55; filter: drop-shadow(0 0 2px rgba(255,224,138,0.5)); }
+    to{ opacity: 1; filter: drop-shadow(0 0 10px rgba(255,224,138,0.85)); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .emblem-ring{ animation: none; }
+    .emblem-core{ animation: none; opacity: 0.9; }
+  }
+
+  .hero .eyebrow{ margin-bottom: 22px; }
+
+  .hero h1{
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 9vw, 5.2rem);
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+    margin: 0 0 22px;
+  }
+
+  .hero .tagline{
+    font-size: clamp(1.02rem, 2.6vw, 1.3rem);
+    color: var(--silver);
+    max-width: 620px;
+    line-height: 1.5;
+    margin: 0 0 34px;
+    font-weight: 400;
+  }
+  .hero .tagline b{ color: var(--gold-bright); font-weight: 600; }
+
+  .hero-cta{
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    color: var(--silver-dim);
+    text-decoration: none;
+    margin-top: 6px;
+    animation: bobbing 2.4s ease-in-out infinite;
+  }
+  .hero-cta svg{ width: 14px; height: 14px; }
+  @keyframes bobbing{
+    0%,100%{ transform: translateY(0); }
+    50%{ transform: translateY(5px); }
+  }
+  @media (prefers-reduced-motion: reduce){ .hero-cta{ animation: none; } }
+
+  .selo-escola{
+    margin-top: 46px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    color: var(--silver-dim);
+    padding: 9px 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+  }
+  .selo-escola b{ color: var(--silver); font-weight: 500; }
+
+  /* ---------- SCROLL REVEAL ---------- */
+  .reveal{
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.in{ opacity: 1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce){
+    .reveal{ opacity: 1; transform: none; transition: none; }
+  }
+
+  /* ---------- SEÇÃO GENÉRICA ---------- */
+  .section{ padding: 90px 0; }
+  .section-head{ text-align: center; max-width: 640px; margin: 0 auto 52px; }
+  .section-head .eyebrow{ margin-bottom: 16px; }
+  .section-head h2{
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.7rem, 4.4vw, 2.5rem);
+    line-height: 1.15;
+    margin: 0 0 14px;
+    color: var(--silver-bright);
+  }
+  .section-head p{
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ---------- MANIFESTO — comparação ---------- */
+  .manifesto-row{
+    display: grid;
+    grid-template-columns: 1fr 34px 1fr;
+    align-items: center;
+    gap: 0;
+    max-width: 760px;
+    margin: 0 auto 14px;
+  }
+  .m-card{
+    border-radius: 14px;
+    padding: 18px 20px;
+    font-size: 0.96rem;
+    line-height: 1.45;
+  }
+  .m-card.dull{
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    color: var(--silver-dim);
+  }
+  .m-card.dull .m-label{ color: var(--silver-dim); }
+  .m-card.lit{
+    background: linear-gradient(155deg, rgba(212,175,55,0.14), rgba(212,175,55,0.03));
+    border: 1px solid var(--line-gold);
+    color: var(--silver-bright);
+    box-shadow: 0 0 26px -8px rgba(212,175,55,0.25);
+  }
+  .m-label{
+    display: block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+    color: var(--gold);
+  }
+  .m-arrow{
+    display: flex; align-items: center; justify-content: center;
+    color: var(--silver-dim);
+  }
+  .m-arrow svg{ width: 18px; height: 18px; }
+
+  @media (max-width: 680px){
+    .manifesto-row{
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .m-arrow{ display: none; }
+  }
+
+  /* ---------- GALERIA DE PROFESSORES ---------- */
+  .galeria-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 22px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .prof-card{
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 30px 24px 26px;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+  }
+  .prof-card::before{
+    content: "";
+    position: absolute; inset: -1px;
+    border-radius: 20px;
+    padding: 1px;
+    background: linear-gradient(140deg, transparent 40%, rgba(212,175,55,0.5), transparent 60%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .prof-card:hover, .prof-card:active{
+    transform: translateY(-6px);
+    border-color: var(--line-gold);
+    box-shadow: 0 18px 40px -18px rgba(212,175,55,0.35);
+  }
+  .prof-card:hover::before, .prof-card:active::before{ opacity: 1; }
+
+  .prof-avatar{
+    width: 104px; height: 104px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    position: relative;
+    background: linear-gradient(150deg, var(--bg-3), var(--bg));
+    border: 2px solid var(--line-gold);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .prof-avatar img{ width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+  .prof-avatar svg{ width: 46%; height: 46%; opacity: 0.85; }
+
+  .prof-nome{
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 1.26rem;
+    color: var(--silver-bright);
+    margin: 0 0 8px;
+  }
+  .prof-esp{
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    line-height: 1.45;
+    margin: 0 0 20px;
+    min-height: 39px;
+  }
+  .prof-btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    color: var(--bg);
+    background: linear-gradient(100deg, var(--gold-deep), var(--gold-bright), var(--gold));
+    background-size: 220% 100%;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 500;
+    transition: background-position 0.4s ease;
+  }
+  .prof-card:hover .prof-btn, .prof-card:active .prof-btn{ background-position: 100% 0; }
+  .prof-btn svg{ width: 12px; height: 12px; transition: transform 0.25s ease; }
+  .prof-card:hover .prof-btn svg{ transform: translateX(3px); }
+
+  /* ---------- PROVA / CREDIBILIDADE ---------- */
+  .prova-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 30px;
+    max-width: 940px;
+    margin: 0 auto;
+  }
+  .prova-item{ text-align: left; padding: 4px; }
+  .prova-item svg{ width: 26px; height: 26px; color: var(--gold); margin-bottom: 14px; }
+  .prova-item h3{
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 1.12rem;
+    color: var(--silver-bright);
+    margin: 0 0 8px;
+  }
+  .prova-item p{
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  .prova-cta{
+    text-align: center;
+    margin-top: 56px;
+    padding-top: 46px;
+    border-top: 1px solid var(--line);
+  }
+  .prova-cta p{
+    font-family: var(--serif);
+    font-size: clamp(1.2rem, 3vw, 1.55rem);
+    color: var(--silver-bright);
+    max-width: 540px;
+    margin: 0 auto;
+    line-height: 1.4;
+  }
+  .prova-cta p .metal-gold{ font-weight: 600; }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    padding: 60px 22px 40px;
+    text-align: center;
+    border-top: 1px solid var(--line);
+  }
+  .footer-emblem{ width: 40px; height: 40px; margin: 0 auto 18px; opacity: 0.8; }
+  .footer-emblem svg{ width: 100%; height: 100%; }
+  footer .linha1{
+    font-family: var(--serif);
+    font-size: 1.02rem;
+    color: var(--silver);
+    margin: 0 0 6px;
+  }
+  footer .linha1 b{ color: var(--gold-bright); font-weight: 600; }
+  footer .linha2{
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--silver-dim);
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<div class="grain-bg"></div>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="emblem" aria-hidden="true">
+    <svg viewBox="0 0 200 200" fill="none">
+      <defs>
+        <linearGradient id="silverLine" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#eef1f6"/>
+          <stop offset="50%" stop-color="#8a90a3"/>
+          <stop offset="100%" stop-color="#eef1f6"/>
+        </linearGradient>
+        <radialGradient id="goldCore" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffe08a"/>
+          <stop offset="100%" stop-color="#a9791f"/>
+        </radialGradient>
+      </defs>
+
+      <g class="emblem-ring">
+        <circle cx="100" cy="100" r="92" stroke="url(#silverLine)" stroke-width="1" opacity="0.55"/>
+        <circle cx="100" cy="100" r="74" stroke="url(#silverLine)" stroke-width="1" stroke-dasharray="2 7" opacity="0.5"/>
+        <!-- linhas de circuito conectando nós ao redor -->
+        <path d="M100 26 L100 8 M100 174 L100 192 M26 100 L8 100 M174 100 L192 100
+                 M52 52 L41 41 M148 52 L159 41 M52 148 L41 159 M148 148 L159 159"
+              stroke="url(#silverLine)" stroke-width="1.2" opacity="0.7"/>
+        <circle cx="100" cy="8" r="3.4" fill="#ffe08a"/>
+        <circle cx="100" cy="192" r="3.4" fill="#ffe08a"/>
+        <circle cx="8" cy="100" r="3.4" fill="#c7ccd8"/>
+        <circle cx="192" cy="100" r="3.4" fill="#c7ccd8"/>
+        <circle cx="41" cy="41" r="2.6" fill="#c7ccd8"/>
+        <circle cx="159" cy="41" r="2.6" fill="#c7ccd8"/>
+        <circle cx="41" cy="159" r="2.6" fill="#c7ccd8"/>
+        <circle cx="159" cy="159" r="2.6" fill="#c7ccd8"/>
+      </g>
+
+      <!-- miolo: forma de "cérebro/brasão" simplificada em linhas -->
+      <g class="emblem-core">
+        <path d="M100 56
+                 C82 56 68 68 66 84
+                 C58 87 53 95 54 104
+                 C48 108 46 116 50 124
+                 C49 133 55 141 64 143
+                 C66 152 74 158 84 158
+                 L100 158
+                 L116 158
+                 C126 158 134 152 136 143
+                 C145 141 151 133 150 124
+                 C154 116 152 108 146 104
+                 C147 95 142 87 134 84
+                 C132 68 118 56 100 56 Z"
+              stroke="url(#goldCore)" stroke-width="2" fill="rgba(212,175,55,0.05)"/>
+        <path d="M100 66 L100 150 M78 84 C78 84 90 92 100 92 C110 92 122 84 122 84
+                  M72 108 L128 108 M76 128 L124 128"
+              stroke="url(#goldCore)" stroke-width="1.3" opacity="0.85"/>
+        <circle cx="100" cy="108" r="5.5" fill="#ffe08a"/>
+      </g>
+    </svg>
+  </div>
+
+  <span class="eyebrow">Escola Cérebros Brilhantes apresenta</span>
+
+  <h1><span class="metal-silver">Professores</span><br><span class="metal-gold">de IA</span></h1>
+
+  <p class="tagline">Conhecimento humano real. <b>Ciência comprovada.</b><br>Potencializado por inteligência artificial.</p>
+
+  <a href="#professores" class="hero-cta">
+    conheça os professores
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </a>
+
+  <div class="selo-escola">Um produto da <b>Escola Cérebros Brilhantes</b></div>
+</section>
+
+<!-- ============ MANIFESTO ============ -->
+<section class="section" id="manifesto">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">O que nos diferencia</span>
+      <h2>Não somos mais uma IA genérica</h2>
+      <p>O mercado está cheio de IAs que respondem perguntas. Cada Professor de IA carrega método, ciência e experiência humana real por trás — e caminha junto com você até o resultado.</p>
+    </div>
+
+    <div id="manifestoRows"></div>
+  </div>
+</section>
+
+<!-- ============ GALERIA DE PROFESSORES ============ -->
+<section class="section" id="professores">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Escolha seu professor</span>
+      <h2>Uma escola para qualquer conhecimento humano</h2>
+      <p>Cada professor é especialista em uma área — com personalidade própria, jornada estruturada e resultado mensurável. Toque para começar a conversa.</p>
+    </div>
+
+    <div class="galeria-grid reveal" id="galeriaGrid"></div>
+  </div>
+</section>
+
+<!-- ============ PROVA / CREDIBILIDADE ============ -->
+<section class="section" id="prova">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Base do método</span>
+      <h2>Construído com pesquisa, não com improviso</h2>
+    </div>
+
+    <div class="prova-grid reveal">
+      <div class="prova-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2a5 5 0 0 0-5 5c0 1.7.8 3.2 2 4.2V17a3 3 0 0 0 6 0v-5.8c1.2-1 2-2.5 2-4.2a5 5 0 0 0-5-5z"/><path d="M9 21h6"/></svg>
+        <h3>Ciência aplicada</h3>
+        <p>Cada explicação é ancorada em princípios reais — nunca em achismo genérico de IA solta.</p>
+      </div>
+      <div class="prova-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <h3>Metodologia real</h3>
+        <p>Trilha estruturada, correção comentada e acompanhamento — o mesmo rigor de um professor de verdade.</p>
+      </div>
+      <div class="prova-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v18h18"/><path d="M18.4 8.6 12 15l-3-3-4 4"/></svg>
+        <h3>Resultado mensurável</h3>
+        <p>O aluno sabe exatamente onde está e quando chegou lá — não fica esperando "melhorar sozinho".</p>
+      </div>
+    </div>
+
+    <div class="prova-cta reveal">
+      <p>Seu professor de IA não te deixa parar <span class="metal-gold">no meio do caminho.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="footer-emblem" aria-hidden="true">
+    <svg viewBox="0 0 200 200" fill="none">
+      <circle cx="100" cy="100" r="92" stroke="#6b7080" stroke-width="1.5"/>
+      <path d="M100 56 C82 56 68 68 66 84 C58 87 53 95 54 104 C48 108 46 116 50 124 C49 133 55 141 64 143 C66 152 74 158 84 158 L116 158 C126 158 134 152 136 143 C145 141 151 133 150 124 C154 116 152 108 146 104 C147 95 142 87 134 84 C132 68 118 56 100 56 Z" stroke="#d4af37" stroke-width="2.5"/>
+    </svg>
+  </div>
+  <p class="linha1">Professores de IA é um produto da <b>Escola Cérebros Brilhantes</b>.</p>
+  <p class="linha2">© <span id="anoAtual"></span> — Todos os professores em um só lugar.</p>
+</footer>
+
+<script>
+/* ============ DADOS DOS PROFESSORES ============
+   Lista mantida aqui na landing (sem depender de Edge Function extra).
+   Pra somar um professor novo: adicionar um objeto no array e subir o arquivo. */
+const PROFESSORES = [
+  {
+    slug: 'master-chef-do-amor',
+    nome: 'Master Chef do Amor',
+    especialidade: 'Culinária afetiva — receitas de todo o Brasil, passo a passo',
+    avatar: '/chef-amor.png'
+  },
+  {
+    slug: 'mestre-do-volante',
+    nome: 'Mestre do Volante',
+    especialidade: 'Preparação completa para a prova teórica da CNH',
+    avatar: '/mestre-do-volante.png'
+  },
+  {
+    slug: 'mestre-do-shape',
+    nome: 'Mestre do Shape',
+    especialidade: 'Treino e nutrição sem enrolação, com resultado de verdade',
+    avatar: '/mestre-do-shape.png'
+  },
+  {
+    slug: 'mente-ativa',
+    nome: 'Professor da Mente',
+    especialidade: 'Treino cognitivo com base em neurociência, pra qualquer idade',
+    avatar: null
+  }
+];
+
+const ICON_PLACEHOLDER = `<svg viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="1.4">
+  <circle cx="12" cy="6.5" r="2.1" fill="#ffe08a" stroke="none"/>
+  <circle cx="6" cy="14" r="2.1" fill="#ffe08a" stroke="none"/>
+  <circle cx="18" cy="14" r="2.1" fill="#ffe08a" stroke="none"/>
+  <circle cx="12" cy="19.5" r="2.1" fill="#ffe08a" stroke="none"/>
+  <path d="M12 8.6V17.4M8 15.2l2.6-6M16 15.2l-2.6-6M8.2 14h7.6"/>
+</svg>`;
+
+const ICON_ARROW = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18l6-6-6-6"/></svg>`;
+
+function montarGaleria(){
+  const grid = document.getElementById('galeriaGrid');
+  grid.innerHTML = PROFESSORES.map(p => `
+    <a class="prof-card" href="/${p.slug}">
+      <div class="prof-avatar">
+        ${p.avatar ? `<img src="${p.avatar}" alt="${p.nome}">` : ICON_PLACEHOLDER}
+      </div>
+      <div class="prof-nome">${p.nome}</div>
+      <div class="prof-esp">${p.especialidade}</div>
+      <span class="prof-btn">Conhecer ${ICON_ARROW}</span>
+    </a>
+  `).join('');
+}
+montarGaleria();
+
+/* ============ MANIFESTO — pares comparativos ============ */
+const COMPARACOES = [
+  { dull: 'Responde quando perguntado', lit: 'Antecipa o que o aluno precisa' },
+  { dull: 'Dá informação', lit: 'Gera execução' },
+  { dull: 'Explica uma vez', lit: 'Corrige até acertar' },
+  { dull: 'Esquece o aluno', lit: 'Acompanha a jornada' },
+  { dull: 'Para quando o aluno para', lit: 'Manda lembrete, puxa de volta' }
+];
+
+function montarManifesto(){
+  const wrap = document.getElementById('manifestoRows');
+  wrap.innerHTML = COMPARACOES.map(c => `
+    <div class="manifesto-row">
+      <div class="m-card dull">
+        <span class="m-label">IA comum</span>
+        ${c.dull}
+      </div>
+      <div class="m-arrow">${ICON_ARROW}</div>
+      <div class="m-card lit">
+        <span class="m-label">Professor de IA</span>
+        ${c.lit}
+      </div>
+    </div>
+  `).join('');
+}
+montarManifesto();
+
+/* ============ ANO NO RODAPÉ ============ */
+document.getElementById('anoAtual').textContent = new Date().getFullYear();
+
+/* ============ SCROLL REVEAL ============ */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      entry.target.classList.add('in');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

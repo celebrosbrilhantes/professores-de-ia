@@ -171,6 +171,44 @@
   }
   .selo-escola b{ color: var(--silver); font-weight: 500; }
 
+  /* ---------- MARQUEE (faixa passando de lado) ---------- */
+  .marquee{
+    position: relative;
+    overflow: hidden;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-2);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .marquee-track{
+    display: flex;
+    width: max-content;
+    animation: marquee-scroll 32s linear infinite;
+  }
+  .marquee-track span{
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--silver-dim);
+    white-space: nowrap;
+    padding: 0 22px;
+    display: inline-flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .marquee-track span b{ color: var(--gold); font-weight: 500; }
+  .marquee-track span::after{ content: "✦"; color: var(--gold); font-size: 10px; }
+  @keyframes marquee-scroll{
+    from{ transform: translateX(0); }
+    to{ transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .marquee-track{ animation: none; }
+  }
+
   /* ---------- SCROLL REVEAL ---------- */
   .reveal{
     opacity: 0;
@@ -178,8 +216,30 @@
     transition: opacity 0.8s ease, transform 0.8s ease;
   }
   .reveal.in{ opacity: 1; transform: translateY(0); }
+
+  .reveal-left{
+    opacity: 0;
+    transform: translateX(-60px);
+    transition: opacity 0.75s ease, transform 0.75s cubic-bezier(.16,.8,.3,1);
+  }
+  .reveal-left.in{ opacity: 1; transform: translateX(0); }
+
+  .reveal-right{
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity 0.75s ease, transform 0.75s cubic-bezier(.16,.8,.3,1);
+  }
+  .reveal-right.in{ opacity: 1; transform: translateX(0); }
+
+  .reveal-scale{
+    opacity: 0;
+    transform: translateY(24px) scale(0.92);
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.16,.8,.3,1);
+  }
+  .reveal-scale.in{ opacity: 1; transform: translateY(0) scale(1); }
+
   @media (prefers-reduced-motion: reduce){
-    .reveal{ opacity: 1; transform: none; transition: none; }
+    .reveal, .reveal-left, .reveal-right, .reveal-scale{ opacity: 1; transform: none; transition: none; }
   }
 
   /* ---------- SEÇÃO GENÉRICA ---------- */
@@ -477,6 +537,11 @@
   <div class="selo-escola">Um produto da <b>Escola Cérebros Brilhantes</b></div>
 </section>
 
+<!-- ============ MARQUEE ============ -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track" id="marqueeTrack"></div>
+</div>
+
 <!-- ============ MANIFESTO ============ -->
 <section class="section" id="manifesto">
   <div class="wrap">
@@ -499,7 +564,7 @@
       <p>Cada professor é especialista em uma área — com personalidade própria, jornada estruturada e resultado mensurável. Toque para começar a conversa.</p>
     </div>
 
-    <div class="galeria-grid reveal" id="galeriaGrid"></div>
+    <div class="galeria-grid" id="galeriaGrid"></div>
   </div>
 </section>
 
@@ -511,18 +576,18 @@
       <h2>Construído com pesquisa, não com improviso</h2>
     </div>
 
-    <div class="prova-grid reveal">
-      <div class="prova-item">
+    <div class="prova-grid">
+      <div class="prova-item reveal-scale" style="transition-delay:0s">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2a5 5 0 0 0-5 5c0 1.7.8 3.2 2 4.2V17a3 3 0 0 0 6 0v-5.8c1.2-1 2-2.5 2-4.2a5 5 0 0 0-5-5z"/><path d="M9 21h6"/></svg>
         <h3>Ciência aplicada</h3>
         <p>Cada explicação é ancorada em princípios reais — nunca em achismo genérico de IA solta.</p>
       </div>
-      <div class="prova-item">
+      <div class="prova-item reveal-scale" style="transition-delay:0.12s">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         <h3>Metodologia real</h3>
         <p>Trilha estruturada, correção comentada e acompanhamento — o mesmo rigor de um professor de verdade.</p>
       </div>
-      <div class="prova-item">
+      <div class="prova-item reveal-scale" style="transition-delay:0.24s">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v18h18"/><path d="M18.4 8.6 12 15l-3-3-4 4"/></svg>
         <h3>Resultado mensurável</h3>
         <p>O aluno sabe exatamente onde está e quando chegou lá — não fica esperando "melhorar sozinho".</p>
@@ -590,8 +655,8 @@ const ICON_ARROW = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 
 function montarGaleria(){
   const grid = document.getElementById('galeriaGrid');
-  grid.innerHTML = PROFESSORES.map(p => `
-    <a class="prof-card" href="/${p.slug}">
+  grid.innerHTML = PROFESSORES.map((p, i) => `
+    <a class="prof-card reveal-scale" style="transition-delay:${i * 0.1}s" href="/${p.slug}">
       <div class="prof-avatar">
         ${p.avatar ? `<img src="${p.avatar}" alt="${p.nome}">` : ICON_PLACEHOLDER}
       </div>
@@ -616,12 +681,12 @@ function montarManifesto(){
   const wrap = document.getElementById('manifestoRows');
   wrap.innerHTML = COMPARACOES.map(c => `
     <div class="manifesto-row">
-      <div class="m-card dull">
+      <div class="m-card dull reveal-left">
         <span class="m-label">IA comum</span>
         ${c.dull}
       </div>
       <div class="m-arrow">${ICON_ARROW}</div>
-      <div class="m-card lit">
+      <div class="m-card lit reveal-right">
         <span class="m-label">Professor de IA</span>
         ${c.lit}
       </div>
@@ -629,6 +694,22 @@ function montarManifesto(){
   `).join('');
 }
 montarManifesto();
+
+/* ============ MARQUEE — faixa passando de lado ============ */
+const FRASES_MARQUEE = [
+  'Conhecimento humano <b>real</b>',
+  '<b>Ciência</b> comprovada',
+  'Resultado <b>mensurável</b>',
+  'Método real, não improviso',
+  'Guia, corrige e leva ao resultado'
+];
+function montarMarquee(){
+  const track = document.getElementById('marqueeTrack');
+  const bloco = FRASES_MARQUEE.map(f => `<span>${f}</span>`).join('');
+  // duplica o conteúdo pra permitir o loop contínuo (translateX -50%)
+  track.innerHTML = bloco + bloco;
+}
+montarMarquee();
 
 /* ============ ANO NO RODAPÉ ============ */
 document.getElementById('anoAtual').textContent = new Date().getFullYear();
@@ -643,7 +724,7 @@ const observer = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
 
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale').forEach(el => observer.observe(el));
 </script>
 
 </body>

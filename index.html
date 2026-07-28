@@ -727,6 +727,7 @@ let MAX_HISTORICO_TROCAS = 12;
 let KIWIFY_LINK = '';
 let AVATAR_SRC = '';
 let TRILHA = null;
+let MATERIAS = [];
 
 /* ================= STATE ================= */
 /* Chaves do localStorage separadas por professor (conversas não se misturam);
@@ -836,6 +837,7 @@ async function boot(){
   MAX_HISTORICO_TROCAS = CONFIG.max_historico || 12;
   KIWIFY_LINK = CONFIG.kiwify_link || '';
   TRILHA = (CONFIG.trilha && Array.isArray(CONFIG.trilha.modulos) && CONFIG.trilha.modulos.length > 0) ? CONFIG.trilha : null;
+  MATERIAS = Array.isArray(CONFIG.materias) ? CONFIG.materias : [];
   catalogBtn.style.display = (TRILHA || PILARES.length > 0) ? 'flex' : 'none';
   AVATAR_SRC = CONFIG.avatar_b64 ? ('data:image/png;base64,' + CONFIG.avatar_b64)
              : (CONFIG.avatar_url || '');
@@ -1037,6 +1039,11 @@ function mostrarPilares(wrap, body){
       }
       if(pilar.foco_input){
         textInput.focus();
+        return;
+      }
+      if(pilar.abre_materias){
+        mostrarMaterias(wrap, body);
+        rolarParaTopoCatalogo(wrap);
         return;
       }
       if(pilar.prompt){
@@ -1243,6 +1250,249 @@ function mostrarPratosSimples(wrap, body, pilar){
   backBtn.textContent = '← Voltar ao cardápio';
   backBtn.onclick = () => { mostrarPilares(wrap, body); rolarParaTopoCatalogo(wrap); };
   body.appendChild(backBtn);
+}
+
+/* ================= ESTUDAR POR TEMA (flashcards) =================
+   Recurso OPCIONAL dirigido pela ficha (coluna materias). Ativado quando
+   um item do catalogo tem "abre_materias": true. Formato: matéria → tema →
+   flashcards (pergunta / ver resposta / próxima). 100% grátis, sem IA —
+   igual ao gate da trilha, só que sem múltipla escolha, porque o conteúdo
+   pedagógico aqui é resposta aberta com gabarito, não teste de 4 alternativas.
+   Estreado no Professor Nota Dez. */
+
+function mostrarMaterias(wrap, body){
+  body.innerHTML = '';
+
+  const titulo = document.createElement('div');
+  titulo.className = 'catalogo-titulo';
+  titulo.textContent = '📚 Escolha a matéria';
+  body.appendChild(titulo);
+
+  const list = document.createElement('div');
+  list.className = 'pilar-list';
+
+  MATERIAS.forEach(materia => {
+    const btn = document.createElement('button');
+    btn.className = 'pilar-btn';
+
+    const icon = document.createElement('span');
+    icon.className = 'picon';
+    icon.textContent = materia.emoji || '📘';
+
+    const textos = document.createElement('div');
+    const t = document.createElement('div');
+    t.className = 'ptitulo';
+    t.textContent = materia.nome;
+    textos.appendChild(t);
+    const nTemas = (materia.temas || []).length;
+    const s = document.createElement('div');
+    s.className = 'psub';
+    s.textContent = `${nTemas} tema${nTemas !== 1 ? 's' : ''} pra estudar`;
+    textos.appendChild(s);
+
+    btn.appendChild(icon);
+    btn.appendChild(textos);
+    btn.onclick = () => { mostrarTemas(wrap, body, materia); rolarParaTopoCatalogo(wrap); };
+    list.appendChild(btn);
+  });
+  body.appendChild(list);
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'recipe-back-btn';
+  backBtn.textContent = '← Voltar ao cardápio';
+  backBtn.onclick = () => { mostrarPilares(wrap, body); rolarParaTopoCatalogo(wrap); };
+  body.appendChild(backBtn);
+}
+
+function mostrarTemas(wrap, body, materia){
+  body.innerHTML = '';
+
+  const label = document.createElement('div');
+  label.className = 'inline-catalog-label';
+  label.textContent = `${materia.emoji || ''} ${materia.nome} — escolha um tema:`;
+  body.appendChild(label);
+
+  const list = document.createElement('div');
+  list.className = 'recipe-list';
+  (materia.temas || []).forEach(tema => {
+    const item = document.createElement('button');
+    item.className = 'recipe-item';
+    const t = document.createElement('span');
+    t.textContent = tema.titulo;
+    item.appendChild(t);
+    const nExerc = (tema.exercicios || []).length;
+    const sub = document.createElement('span');
+    sub.className = 'rsub';
+    sub.textContent = `${nExerc} exercícios com gabarito`;
+    item.appendChild(sub);
+    item.onclick = () => { mostrarFlashcards(wrap, body, materia, tema); rolarParaTopoCatalogo(wrap); };
+    list.appendChild(item);
+  });
+  body.appendChild(list);
+
+  if(materia.preparar_prova && Array.isArray(materia.preparar_prova.simulado) && materia.preparar_prova.simulado.length > 0){
+    const provaBtn = document.createElement('button');
+    provaBtn.className = 'trilha-acao primaria';
+    provaBtn.textContent = `📝 Preparar para a prova de ${materia.nome}`;
+    provaBtn.onclick = () => { mostrarSimuladoMateria(wrap, body, materia); rolarParaTopoCatalogo(wrap); };
+    body.appendChild(provaBtn);
+  }
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'recipe-back-btn';
+  backBtn.textContent = '← Voltar às matérias';
+  backBtn.onclick = () => { mostrarMaterias(wrap, body); rolarParaTopoCatalogo(wrap); };
+  body.appendChild(backBtn);
+}
+
+/* Motor genérico de flashcards: usado tanto pelos exercícios de um tema
+   quanto pelo simulado de "preparar pra prova". cfg = { titulo, resumo?,
+   cards: [{p, gabarito, explicacao?}], desafioExtraPrompt?, voltar() } */
+function mostrarFlashcardSet(wrap, body, cfg){
+  let i = 0;
+
+  function renderIntro(){
+    body.innerHTML = '';
+    const t = document.createElement('div');
+    t.className = 'trilha-titulo';
+    t.textContent = cfg.titulo;
+    body.appendChild(t);
+
+    if(cfg.resumo){
+      const r = document.createElement('div');
+      r.className = 'quiz-explica';
+      r.textContent = cfg.resumo;
+      body.appendChild(r);
+    }
+
+    const comecar = document.createElement('button');
+    comecar.className = 'trilha-acao primaria';
+    comecar.textContent = `▶️ Começar (${cfg.cards.length} questões)`;
+    comecar.onclick = () => { i = 0; renderCard(); rolarParaTopoCatalogo(wrap); };
+    body.appendChild(comecar);
+
+    const backBtn = document.createElement('button');
+    backBtn.className = 'recipe-back-btn';
+    backBtn.textContent = '← Voltar';
+    backBtn.onclick = () => { cfg.voltar(); rolarParaTopoCatalogo(wrap); };
+    body.appendChild(backBtn);
+  }
+
+  function renderCard(){
+    body.innerHTML = '';
+    const t = document.createElement('div');
+    t.className = 'trilha-titulo';
+    t.textContent = cfg.titulo;
+    body.appendChild(t);
+
+    const num = document.createElement('div');
+    num.className = 'quiz-num';
+    num.style.marginTop = '10px';
+    num.textContent = `QUESTÃO ${i+1} DE ${cfg.cards.length}`;
+    body.appendChild(num);
+
+    const card = cfg.cards[i];
+    const enun = document.createElement('div');
+    enun.className = 'quiz-q';
+    enun.textContent = card.p;
+    body.appendChild(enun);
+
+    const prox = document.createElement('button');
+    prox.className = 'trilha-acao primaria';
+    prox.style.display = 'none';
+    prox.textContent = (i < cfg.cards.length - 1) ? 'Próxima →' : 'Concluir ✅';
+    prox.onclick = () => {
+      i++;
+      if(i < cfg.cards.length){ renderCard(); }
+      else { renderFim(); }
+      rolarParaTopoCatalogo(wrap);
+    };
+
+    const verBtn = document.createElement('button');
+    verBtn.className = 'trilha-acao suave';
+    verBtn.textContent = '👁️ Ver resposta';
+    verBtn.onclick = () => {
+      verBtn.remove();
+      const resp = document.createElement('div');
+      resp.className = 'quiz-opt certa';
+      resp.style.cursor = 'default';
+      resp.textContent = '✅ ' + card.gabarito;
+      body.insertBefore(resp, prox);
+      if(card.explicacao){
+        const ex = document.createElement('div');
+        ex.className = 'quiz-explica';
+        ex.textContent = '💡 ' + card.explicacao;
+        body.insertBefore(ex, prox);
+      }
+      prox.style.display = 'flex';
+    };
+    body.appendChild(verBtn);
+    body.appendChild(prox);
+  }
+
+  function renderFim(){
+    body.innerHTML = '';
+    const res = document.createElement('div');
+    res.className = 'quiz-resultado';
+    const icon = document.createElement('div');
+    icon.style.fontSize = '40px';
+    icon.textContent = '🎉';
+    res.appendChild(icon);
+    const msg = document.createElement('div');
+    msg.className = 'rmsg';
+    msg.textContent = `Você passou pelas ${cfg.cards.length} questões! Sempre que quiser, pode refazer ou pedir mais desafios.`;
+    res.appendChild(msg);
+    body.appendChild(res);
+
+    if(cfg.desafioExtraPrompt){
+      const extraBtn = document.createElement('button');
+      extraBtn.className = 'trilha-acao primaria';
+      extraBtn.textContent = '🚀 Quero mais desafios desse tema';
+      extraBtn.onclick = () => {
+        const continuar = () => {
+          textInput.value = cfg.desafioExtraPrompt;
+          sendMessage();
+        };
+        if(exigeConfiguracao(continuar)) return;
+        continuar();
+      };
+      body.appendChild(extraBtn);
+    }
+
+    const denovo = document.createElement('button');
+    denovo.className = 'trilha-acao suave';
+    denovo.textContent = '🔁 Refazer essas questões';
+    denovo.onclick = () => { i = 0; renderCard(); rolarParaTopoCatalogo(wrap); };
+    body.appendChild(denovo);
+
+    const voltar = document.createElement('button');
+    voltar.className = 'recipe-back-btn';
+    voltar.textContent = '← Voltar';
+    voltar.onclick = () => { cfg.voltar(); rolarParaTopoCatalogo(wrap); };
+    body.appendChild(voltar);
+  }
+
+  renderIntro();
+}
+
+function mostrarFlashcards(wrap, body, materia, tema){
+  mostrarFlashcardSet(wrap, body, {
+    titulo: `${materia.emoji || ''} ${tema.titulo}`,
+    resumo: tema.resumo,
+    cards: tema.exercicios || [],
+    desafioExtraPrompt: `Quero praticar mais exercícios sobre "${tema.titulo}" (${materia.nome}). Me propõe novos desafios desse tema, um de cada vez, e me ajuda a chegar na resposta sem me entregar pronta.`,
+    voltar: () => mostrarTemas(wrap, body, materia)
+  });
+}
+
+function mostrarSimuladoMateria(wrap, body, materia){
+  const prova = materia.preparar_prova || {};
+  mostrarFlashcardSet(wrap, body, {
+    titulo: `📝 Preparar para a prova — ${materia.nome}`,
+    resumo: prova.resumo_rapido,
+    cards: prova.simulado || [],
+    voltar: () => mostrarTemas(wrap, body, materia)
+  });
 }
 
 /* Insere a trilha e/ou o catálogo no fluxo da conversa (chamado pelo botão 📋).

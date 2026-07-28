@@ -104,13 +104,11 @@
 
   /* ---------- HERO ---------- */
   .hero{
-    min-height: 100svh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     text-align: center;
-    padding: 90px 22px 60px;
+    padding: 52px 22px 50px;
   }
 
   .emblem{
@@ -144,7 +142,12 @@
     .emblem-glow{ animation: none; opacity: 0.6; }
   }
 
-  .hero .eyebrow{ margin-bottom: 22px; }
+  .hero .eyebrow{
+    margin-bottom: 22px;
+    opacity: 0;
+    animation: apareceSobe 0.7s ease forwards;
+    animation-delay: 0.1s;
+  }
 
   .hero h1{
     font-family: var(--serif);
@@ -153,6 +156,20 @@
     line-height: 1.02;
     letter-spacing: -0.01em;
     margin: 0 0 22px;
+    overflow: hidden;
+  }
+  .hero h1 span{
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(48px);
+  }
+  .hero h1 span.metal-silver{
+    animation: apareceSobeForte 0.9s cubic-bezier(.16,.8,.3,1) forwards 0.28s,
+               shimmer 7s ease-in-out infinite;
+  }
+  .hero h1 span.metal-gold{
+    animation: apareceSobeForte 0.9s cubic-bezier(.16,.8,.3,1) forwards 0.5s,
+               shimmer 7s ease-in-out infinite;
   }
 
   .hero .tagline{
@@ -162,8 +179,23 @@
     line-height: 1.5;
     margin: 0 0 34px;
     font-weight: 400;
+    opacity: 0;
+    animation: apareceSobe 0.7s ease forwards;
+    animation-delay: 0.82s;
   }
   .hero .tagline b{ color: var(--gold-bright); font-weight: 600; }
+
+  @keyframes apareceSobe{
+    from{ opacity: 0; transform: translateY(16px); }
+    to{ opacity: 1; transform: translateY(0); }
+  }
+  @keyframes apareceSobeForte{
+    from{ opacity: 0; transform: translateY(48px); }
+    to{ opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .hero .eyebrow, .hero h1 span, .hero .tagline{ animation: none; opacity: 1; transform: none; }
+  }
 
   .hero-cta{
     display: inline-flex;
@@ -175,17 +207,19 @@
     color: var(--silver-dim);
     text-decoration: none;
     margin-top: 6px;
-    animation: bobbing 2.4s ease-in-out infinite;
+    opacity: 0;
+    animation: apareceFade 0.6s ease forwards, bobbing 2.4s ease-in-out 1s infinite;
   }
+  @keyframes apareceFade{ to{ opacity: 1; } }
   .hero-cta svg{ width: 14px; height: 14px; }
   @keyframes bobbing{
     0%,100%{ transform: translateY(0); }
     50%{ transform: translateY(5px); }
   }
-  @media (prefers-reduced-motion: reduce){ .hero-cta{ animation: none; } }
+  @media (prefers-reduced-motion: reduce){ .hero-cta{ animation: none; opacity: 1; } }
 
   .selo-escola{
-    margin-top: 46px;
+    margin-top: 42px;
     font-family: var(--mono);
     font-size: 11.5px;
     letter-spacing: 0.1em;
@@ -193,8 +227,12 @@
     padding: 9px 18px;
     border: 1px solid var(--line);
     border-radius: 999px;
+    opacity: 0;
+    animation: apareceFade 0.6s ease forwards;
+    animation-delay: 1.05s;
   }
   .selo-escola b{ color: var(--silver); font-weight: 500; }
+  @media (prefers-reduced-motion: reduce){ .selo-escola{ animation: none; opacity: 1; } }
 
   /* ---------- MARQUEE (faixa passando de lado) ---------- */
   .marquee{

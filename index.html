@@ -727,6 +727,7 @@ let MAX_HISTORICO_TROCAS = 12;
 let KIWIFY_LINK = '';
 let AVATAR_SRC = '';
 let TRILHA = null;
+let SERIES = null; // trilha.series (opcional): seletor de série por professor
 let MATERIAS = [];
 
 /* ================= STATE ================= */
@@ -736,6 +737,7 @@ const KEY_EMAIL = 'pia_email';
 const KEY_MSGS = 'pia_msgs_' + PROFESSOR_SLUG;
 const KEY_REF = 'pia_ref_' + PROFESSOR_SLUG;
 const KEY_TRILHA = 'pia_trilha_' + PROFESSOR_SLUG;
+const KEY_SERIE = 'pia_serie_' + PROFESSOR_SLUG;
 const KEY_STREAK = 'pia_streak_' + PROFESSOR_SLUG;
 
 let alunoEmail = localStorage.getItem(KEY_EMAIL) || '';
@@ -837,6 +839,7 @@ async function boot(){
   MAX_HISTORICO_TROCAS = CONFIG.max_historico || 12;
   KIWIFY_LINK = CONFIG.kiwify_link || '';
   TRILHA = (CONFIG.trilha && Array.isArray(CONFIG.trilha.modulos) && CONFIG.trilha.modulos.length > 0) ? CONFIG.trilha : null;
+  SERIES = (TRILHA && Array.isArray(TRILHA.series) && TRILHA.series.length > 0) ? TRILHA.series : null;
   MATERIAS = Array.isArray(CONFIG.materias) ? CONFIG.materias : [];
   catalogBtn.style.display = (TRILHA || PILARES.length > 0) ? 'flex' : 'none';
   AVATAR_SRC = CONFIG.avatar_b64 ? ('data:image/png;base64,' + CONFIG.avatar_b64)
@@ -1570,6 +1573,69 @@ function soltarConfete(forte){
 }
 
 /* ---- Construção da trilha ---- */
+/* ===== SELETOR DE SÉRIE (opcional, dirigido pela ficha) =====
+   Ativado quando trilha.series existe: [{id, nome, emoji?, categorias:[ids]}].
+   O aluno escolhe a série antes de ver a trilha; só as categorias daquela
+   série aparecem. A escolha fica no localStorage e é apagada junto com a
+   conversa ("limpar conversa" => pergunta de novo). Professores sem o campo
+   series se comportam exatamente como antes. */
+function getSerieSelecionada(){
+  if(!SERIES) return null;
+  const id = localStorage.getItem(KEY_SERIE);
+  if(!id) return null;
+  return SERIES.find(s => s.id === id) || null;
+}
+function salvarSerie(id){ localStorage.setItem(KEY_SERIE, id); }
+function limparSerie(){ localStorage.removeItem(KEY_SERIE); }
+function getAlunoContexto(){
+  const s = getSerieSelecionada();
+  return s ? ('O aluno estuda no ' + s.nome + ' (série escolhida no seletor do app). Ajuste o tom e o nível conforme essa série.') : null;
+}
+
+function mostrarSeletorSerie(wrap, body){
+  body.innerHTML = '';
+  const t = document.createElement('div');
+  t.className = 'trilha-titulo';
+  t.textContent = '📚 Qual série você está?';
+  body.appendChild(t);
+  const sub = document.createElement('div');
+  sub.className = 'progress-label';
+  sub.style.marginTop = '4px';
+  sub.textContent = 'Escolha pra abrir a trilha certa pra você — dá pra trocar depois.';
+  body.appendChild(sub);
+
+  const list = document.createElement('div');
+  list.className = 'pilar-list';
+  list.style.marginTop = '12px';
+  SERIES.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'pilar-btn';
+    const icon = document.createElement('span');
+    icon.className = 'picon';
+    icon.textContent = s.emoji || '🎒';
+    const textos = document.createElement('div');
+    const nome = document.createElement('div');
+    nome.className = 'ptitulo';
+    nome.textContent = s.nome;
+    textos.appendChild(nome);
+    if(s.sub){
+      const ss = document.createElement('div');
+      ss.className = 'psub';
+      ss.textContent = s.sub;
+      textos.appendChild(ss);
+    }
+    btn.appendChild(icon);
+    btn.appendChild(textos);
+    btn.onclick = () => {
+      salvarSerie(s.id);
+      mostrarTrilhaHome(wrap, body);
+      rolarParaTopoCatalogo(wrap);
+    };
+    list.appendChild(btn);
+  });
+  body.appendChild(list);
+}
+
 function buildTrilha(){
   const wrap = document.createElement('div');
   wrap.className = 'trilha-wrap';
@@ -1592,11 +1658,12 @@ function insertInlineTrilha(){
    Quando existe mais de uma categoria (trilhas em paralelo, ex: Mente Ativa),
    cada uma vira um bloco próprio com sua própria barra de progresso, e o
    desbloqueio sequencial passa a valer só dentro da mesma categoria. */
-function agruparModulosPorCategoria(){
+function agruparModulosPorCategoria(catsFiltro){
   const grupos = {};
   const ordemGrupos = [];
   TRILHA.modulos.forEach((mod, idxGlobal) => {
     const cat = mod.categoria || '__unica__';
+    if(catsFiltro && !catsFiltro.has(cat)) return;
     if(!grupos[cat]){ grupos[cat] = []; ordemGrupos.push(cat); }
     grupos[cat].push({ mod, idxGlobal });
   });
@@ -1623,6 +1690,13 @@ function moduloDesbloqueadoNoGrupo(itensDoGrupo, posNoGrupo){
 function mostrarTrilhaHome(wrap, body){
   body.innerHTML = '';
 
+  // Se o professor tem séries e o aluno ainda não escolheu, pergunta primeiro.
+  const serieAtual = SERIES ? getSerieSelecionada() : null;
+  if(SERIES && !serieAtual){
+    mostrarSeletorSerie(wrap, body);
+    return;
+  }
+
   const top = document.createElement('div');
   top.className = 'trilha-top';
   const t = document.createElement('div');
@@ -1638,7 +1712,27 @@ function mostrarTrilhaHome(wrap, body){
   }
   body.appendChild(top);
 
-  const { grupos, ordemGrupos } = agruparModulosPorCategoria();
+  if(serieAtual){
+    const linha = document.createElement('div');
+    linha.className = 'progress-label';
+    linha.style.marginTop = '4px';
+    linha.appendChild(document.createTextNode(`🎒 ${serieAtual.nome} · `));
+    const trocar = document.createElement('a');
+    trocar.href = '#';
+    trocar.textContent = 'trocar de série';
+    trocar.style.color = 'var(--wine)';
+    trocar.onclick = (e) => {
+      e.preventDefault();
+      limparSerie();
+      mostrarTrilhaHome(wrap, body);
+      rolarParaTopoCatalogo(wrap);
+    };
+    linha.appendChild(trocar);
+    body.appendChild(linha);
+  }
+
+  const catsDaSerie = serieAtual && Array.isArray(serieAtual.categorias) ? new Set(serieAtual.categorias) : null;
+  const { grupos, ordemGrupos } = agruparModulosPorCategoria(catsDaSerie);
   const mostrarCabecalhosCategoria = ordemGrupos.length > 1;
 
   ordemGrupos.forEach(catId => {
@@ -2450,6 +2544,7 @@ async function sendMessage(){
         model: MODEL,
         max_tokens: 1500,
         professor_slug: PROFESSOR_SLUG,
+        aluno_contexto: getAlunoContexto() || undefined,
         messages: getMensagensParaAPI()
       })
     });
@@ -2525,6 +2620,7 @@ clearChatBtn.onclick = () => {
   if(confirm('Tem certeza que quer limpar toda a conversa?')){
     messages = [];
     localStorage.removeItem(KEY_MSGS);
+    limparSerie();
     renderAll();
     settingsModal.classList.remove('show');
   }

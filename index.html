@@ -710,7 +710,7 @@
    O professor é identificado pelo caminho da URL (ex.: /master-chef-do-amor)
    e sua ficha completa vem do Supabase via Edge Function professor-config.
    O system prompt NUNCA chega ao navegador — a Edge Function chat-anthropic
-   busca-o no banco pelo professor_slug.
+   (ou chat-gemini) busca-o no banco pelo professor_slug.
    ================================================================= */
 
 /* ================= CONFIG FIXA ================= */
@@ -729,6 +729,11 @@ let AVATAR_SRC = '';
 let TRILHA = null;
 let SERIES = null; // trilha.series (opcional): seletor de série por professor
 let MATERIAS = [];
+/* ai_provider (opcional, vem da ficha): 'anthropic' (padrão) ou 'gemini'.
+   Decide qual Edge Function de chat a casca chama — nenhuma outra mudança
+   é necessária, já que chat-gemini normaliza a resposta no mesmo formato
+   da Anthropic. Rollback = trocar o campo de volta no banco. */
+let AI_PROVIDER = 'anthropic';
 
 /* ================= STATE ================= */
 /* Chaves do localStorage separadas por professor (conversas não se misturam);
@@ -841,6 +846,7 @@ async function boot(){
   TRILHA = (CONFIG.trilha && Array.isArray(CONFIG.trilha.modulos) && CONFIG.trilha.modulos.length > 0) ? CONFIG.trilha : null;
   SERIES = (TRILHA && Array.isArray(TRILHA.series) && TRILHA.series.length > 0) ? TRILHA.series : null;
   MATERIAS = Array.isArray(CONFIG.materias) ? CONFIG.materias : [];
+  AI_PROVIDER = CONFIG.ai_provider || 'anthropic';
   catalogBtn.style.display = (TRILHA || PILARES.length > 0) ? 'flex' : 'none';
   AVATAR_SRC = CONFIG.avatar_b64 ? ('data:image/png;base64,' + CONFIG.avatar_b64)
              : (CONFIG.avatar_url || '');
@@ -2535,7 +2541,12 @@ async function sendMessage(){
 
     // 2. Chama a Edge Function do Supabase. O system prompt é buscado no
     //    servidor pelo professor_slug — nunca trafega até o navegador.
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/chat-anthropic`, {
+    //    O endpoint muda conforme o ai_provider da ficha do professor
+    //    (chat-anthropic por padrão, chat-gemini quando configurado no
+    //    banco) — chat-gemini normaliza sua resposta no mesmo formato,
+    //    então nenhum outro trecho desta função precisa mudar.
+    const endpointChat = AI_PROVIDER === 'gemini' ? 'chat-gemini' : 'chat-anthropic';
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/${endpointChat}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

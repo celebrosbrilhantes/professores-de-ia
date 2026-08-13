@@ -635,6 +635,38 @@
   .quiz-resultado { text-align:center; padding: 10px 4px 4px; }
   .quiz-resultado .rscore { font-size: 40px; font-weight: 800; color: var(--wine); }
   .quiz-resultado .rmsg { font-size: 16px; color: var(--ink); margin: 8px 0 4px; line-height:1.45; }
+
+  /* ---------- SUGESTÕES DINÂMICAS E PERFIL SALVO ---------- */
+  /* Recursos genéricos (qualquer professor pode usar via marcadores no
+     system_prompt): [SUGESTOES: opção 1 | opção 2 | opção 3] renderiza
+     chips clicáveis; [PLANO_SALVO: resumo] renderiza um card de confirmação
+     e persiste o resumo no banco, vinculado à aluna+professor. */
+  .sugestao-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 10px;
+  }
+  .sugestao-chip {
+    background: var(--cream);
+    border: 2px solid var(--gold);
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--wine);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s, transform 0.1s;
+  }
+  .sugestao-chip:active { transform: scale(0.96); background: var(--cream-2); }
+  .plano-salvo-card {
+    margin-top: 10px;
+    background: linear-gradient(135deg, var(--gold-2), var(--gold));
+    color: var(--bg-deep);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 15.5px;
+    font-weight: 700;
+  }
 </style>
 </head>
 <body>
@@ -734,6 +766,10 @@ let MATERIAS = [];
    é necessária, já que chat-gemini normaliza a resposta no mesmo formato
    da Anthropic. Rollback = trocar o campo de volta no banco. */
 let AI_PROVIDER = 'anthropic';
+/* Perfil nutricional (ou qualquer resumo persistente) salvo da aluna com
+   este professor, via marcador [PLANO_SALVO: ...]. Recurso opcional e
+   genérico — professores que não usam o marcador nunca preenchem isso. */
+let PERFIL_NUTRICIONAL_RESUMO = null;
 
 /* ================= STATE ================= */
 /* Chaves do localStorage separadas por professor (conversas não se misturam);
@@ -862,7 +898,7 @@ async function boot(){
   setInputsEnabled(true);
   updateStatus();
   renderAll();
-  if(alunoEmail){ carregarMeuCodigoIndicacao(); }
+  if(alunoEmail){ carregarMeuCodigoIndicacao(); buscarPerfilNutricional(); }
 }
 
 function setInputsEnabled(on){
@@ -1594,8 +1630,45 @@ function getSerieSelecionada(){
 function salvarSerie(id){ localStorage.setItem(KEY_SERIE, id); }
 function limparSerie(){ localStorage.removeItem(KEY_SERIE); }
 function getAlunoContexto(){
+  const partes = [];
   const s = getSerieSelecionada();
-  return s ? ('O aluno estuda no ' + s.nome + ' (série escolhida no seletor do app). Ajuste o tom e o nível conforme essa série.') : null;
+  if(s){ partes.push('O aluno estuda no ' + s.nome + ' (série escolhida no seletor do app). Ajuste o tom e o nível conforme essa série.'); }
+  if(PERFIL_NUTRICIONAL_RESUMO){ partes.push('Perfil/plano já salvo anteriormente desta aluna: ' + PERFIL_NUTRICIONAL_RESUMO); }
+  return partes.length > 0 ? partes.join(' ') : null;
+}
+
+/* ================= PERFIL NUTRICIONAL PERSISTENTE (genérico) =================
+   Recurso opcional: quando o professor usa o marcador [PLANO_SALVO: resumo],
+   esse resumo fica salvo vinculado à aluna+professor e é devolvido
+   automaticamente nas próximas conversas via getAlunoContexto(), sem a
+   aluna precisar reenviar a foto. Nunca guarda a foto em si, só o texto. */
+async function buscarPerfilNutricional(){
+  if(!alunoEmail) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/perfil-nutricional-buscar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: alunoEmail, professor_slug: PROFESSOR_SLUG })
+    });
+    const data = await res.json();
+    PERFIL_NUTRICIONAL_RESUMO = data.resumo || null;
+  } catch(e) {
+    console.error('Erro ao buscar perfil nutricional:', e);
+  }
+}
+
+async function salvarPerfilNutricional(resumo){
+  if(!alunoEmail || !resumo) return;
+  try{
+    await fetch(`${SUPABASE_URL}/functions/v1/perfil-nutricional-salvar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: alunoEmail, professor_slug: PROFESSOR_SLUG, resumo })
+    });
+    PERFIL_NUTRICIONAL_RESUMO = resumo;
+  } catch(e) {
+    console.error('Erro ao salvar perfil nutricional:', e);
+  }
 }
 
 function mostrarSeletorSerie(wrap, body){
@@ -2121,7 +2194,7 @@ function addAssistantBubble(text, isTyping, skipTimers){
 }
 
 function renderAssistantContent(bubble, text, skipTimers){
-  const markerRegex = /\[TIMER:\s*(\d+)\s*\|\s*([^\]]+)\]|\[CATALOGO\]|\[MODULO_CONCLUIDO:\s*([a-zA-Z0-9_-]+)\]/g;
+  const markerRegex = /\[TIMER:\s*(\d+)\s*\|\s*([^\]]+)\]|\[CATALOGO\]|\[MODULO_CONCLUIDO:\s*([a-zA-Z0-9_-]+)\]|\[SUGESTOES:\s*([^\]]+)\]|\[PLANO_SALVO:\s*([^\]]+)\]/g;
   let lastIndex = 0;
   let match;
   const fragments = [];
@@ -2131,6 +2204,10 @@ function renderAssistantContent(bubble, text, skipTimers){
       fragments.push({type:'catalog'});
     } else if(match[3]){
       fragments.push({type:'modulo_concluido', moduloId: match[3]});
+    } else if(match[4]){
+      fragments.push({type:'sugestoes', opcoes: match[4].split('|').map(s => s.trim()).filter(Boolean)});
+    } else if(match[5]){
+      fragments.push({type:'plano_salvo', resumo: match[5].trim()});
     } else {
       fragments.push({type:'timer', seconds: parseInt(match[1]), label: match[2].trim()});
     }
@@ -2153,8 +2230,46 @@ function renderAssistantContent(bubble, text, skipTimers){
       bubble.appendChild(buildCatalogGrid());
     } else if(f.type === 'modulo_concluido'){
       bubble.appendChild(buildModuloConcluidoCard(f.moduloId));
+    } else if(f.type === 'sugestoes'){
+      bubble.appendChild(buildSugestoesChips(f.opcoes));
+    } else if(f.type === 'plano_salvo'){
+      // skipTimers=true significa "mensagem histórica sendo re-exibida" (ex.: reload
+      // da página) — nesse caso só mostramos o card, sem salvar de novo. Isso evita
+      // sobrescrever um perfil mais recente com uma versão antiga ao recarregar.
+      bubble.appendChild(buildPlanoSalvoCard(f.resumo, skipTimers));
     }
   });
+}
+
+/* Chips de sugestão dinâmica: clicar em uma opção envia ela como se a
+   aluna tivesse digitado — consome crédito normalmente, igual mensagem
+   digitada. Recurso genérico, disponível para qualquer professor. */
+function buildSugestoesChips(opcoes){
+  const wrap = document.createElement('div');
+  wrap.className = 'sugestao-chips';
+  opcoes.forEach(opcao => {
+    const chip = document.createElement('button');
+    chip.className = 'sugestao-chip';
+    chip.textContent = opcao;
+    chip.onclick = () => {
+      const continuar = () => {
+        textInput.value = opcao;
+        sendMessage();
+      };
+      if(exigeConfiguracao(continuar)) return;
+      continuar();
+    };
+    wrap.appendChild(chip);
+  });
+  return wrap;
+}
+
+function buildPlanoSalvoCard(resumo, isHistorico){
+  const card = document.createElement('div');
+  card.className = 'plano-salvo-card';
+  card.textContent = '📋 Seu plano foi salvo! Da próxima vez você não precisa reenviar a foto.';
+  if(!isHistorico){ salvarPerfilNutricional(resumo); }
+  return card;
 }
 
 /* Marcador [MODULO_CONCLUIDO: id] — usado quando a conclusão de um módulo
@@ -2616,6 +2731,7 @@ saveKeyBtn.onclick = () => {
   // Registra a indicação (se veio de um link de indicação) e carrega/gera o código próprio
   registrarIndicacaoSeNecessario();
   carregarMeuCodigoIndicacao();
+  buscarPerfilNutricional();
 
   // Retoma automaticamente a ação que o usuário tentou fazer antes de configurar o e-mail
   if(acaoPendente){

@@ -667,6 +667,38 @@
     font-size: 15.5px;
     font-weight: 700;
   }
+
+  /* ---------- LEMBRETES / NOTIFICAÇÕES (genérico) ---------- */
+  /* [PEDIR_HORARIO: tipo] renderiza um seletor de horário nativo dentro da
+     bolha do chat (sem sair da tela). A aluna escolhe e confirma; isso
+     manda o horário como mensagem normal. [LEMBRETE_SALVO: tipo|horario]
+     é o marcador de confirmação, mesma lógica do [PLANO_SALVO]. */
+  .horario-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .horario-input {
+    font-size: 20px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 2px solid var(--line);
+    background: white;
+    width: 100%;
+    font-family: inherit;
+    color: var(--ink);
+  }
+  .horario-input:focus { outline: none; border-color: var(--gold); }
+  .lembrete-salvo-card {
+    margin-top: 10px;
+    background: linear-gradient(135deg, var(--gold-2), var(--gold));
+    color: var(--bg-deep);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 15.5px;
+    font-weight: 700;
+  }
 </style>
 </head>
 <body>
@@ -748,6 +780,10 @@
 /* ================= CONFIG FIXA ================= */
 const SUPABASE_URL = 'https://vkjmydxsqdsuinxnlojl.supabase.co';
 const MODEL = "claude-sonnet-4-6";
+/* Chave pública VAPID (Web Push) — pública por natureza, sem risco em
+   ficar exposta no cliente. Gerada uma única vez para toda a plataforma;
+   a privada correspondente nunca sai do Vault do Supabase. */
+const VAPID_PUBLIC_KEY = 'BPFBNL72ypGOgCmcpA_ATt3rGm_-g--Zqe5g1TS3dzXk741okU-PkIY2iRp9BH_M1rX1yS8O3tooyvZNXE8mVeo';
 
 /* Slug do professor extraído do caminho da URL */
 const PROFESSOR_SLUG = (location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
@@ -849,6 +885,10 @@ function aplicarTema(tema){
 async function boot(){
   mostrarBoot('Preparando tudo pra você...', true);
   setInputsEnabled(false);
+
+  /* Registra o service worker cedo (não pede permissão nenhuma sozinho —
+     só deixa o navegador pronto pra quando a inscrição de push acontecer). */
+  registrarServiceWorker();
 
   if(!PROFESSOR_SLUG){
     headerNome.textContent = 'Professores de IA';
@@ -1671,6 +1711,127 @@ async function salvarPerfilNutricional(resumo){
   }
 }
 
+/* ================= LEMBRETES / NOTIFICAÇÕES PUSH (genérico) =================
+   Recurso opcional e genérico (qualquer professor pode usar via marcadores):
+   [PEDIR_HORARIO: tipo] mostra um seletor de horário nativo dentro da bolha
+   (sem sair do chat); a aluna escolhe e confirma, o horário vira mensagem
+   normal; o professor confirma em texto e fecha com
+   [LEMBRETE_SALVO: tipo|horario], que persiste no banco e garante a
+   inscrição de push do aparelho (pede permissão só nesse momento, nunca
+   de cara — mais chance da aluna aceitar). */
+
+async function registrarServiceWorker(){
+  if(!('serviceWorker' in navigator)) return;
+  try{ await navigator.serviceWorker.register('/sw.js'); }
+  catch(e){ console.error('Erro ao registrar service worker:', e); }
+}
+
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for(let i = 0; i < rawData.length; i++){ outputArray[i] = rawData.charCodeAt(i); }
+  return outputArray;
+}
+
+function arrayBufferParaBase64Url(buffer){
+  const bytes = new Uint8Array(buffer);
+  let binario = '';
+  bytes.forEach(b => { binario += String.fromCharCode(b); });
+  return btoa(binario).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/* Garante que o navegador está inscrito em push e que o Supabase conhece essa
+   inscrição. Só pede permissão do navegador na primeira vez que a aluna
+   configura um lembrete — nunca no boot, pra não assustar/ser negado à toa. */
+async function garantirInscricaoPush(){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if(!alunoEmail) return;
+  try{
+    const registro = await navigator.serviceWorker.ready;
+    let inscricao = await registro.pushManager.getSubscription();
+
+    if(!inscricao){
+      if(Notification.permission === 'denied') return;
+      const permissao = await Notification.requestPermission();
+      if(permissao !== 'granted') return;
+      inscricao = await registro.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+
+    await fetch(`${SUPABASE_URL}/functions/v1/push-inscrever`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: alunoEmail,
+        endpoint: inscricao.endpoint,
+        keys: {
+          p256dh: arrayBufferParaBase64Url(inscricao.getKey('p256dh')),
+          auth: arrayBufferParaBase64Url(inscricao.getKey('auth'))
+        }
+      })
+    });
+  } catch(e) {
+    console.error('Erro ao garantir inscrição push:', e);
+  }
+}
+
+async function salvarLembrete(tipo, horario){
+  if(!alunoEmail) return;
+  try{
+    await fetch(`${SUPABASE_URL}/functions/v1/lembrete-salvar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: alunoEmail, professor_slug: PROFESSOR_SLUG, tipo, horario })
+    });
+  } catch(e) {
+    console.error('Erro ao salvar lembrete:', e);
+  }
+}
+
+/* Seletor de horário nativo (input type=time — abre o relógio do próprio
+   sistema operacional, sem precisar construir UI customizada). Ao confirmar,
+   o horário escolhido é enviado como se a aluna tivesse digitado. */
+function buildHorarioPicker(tipo){
+  const wrap = document.createElement('div');
+  wrap.className = 'horario-picker';
+
+  const input = document.createElement('input');
+  input.type = 'time';
+  input.className = 'horario-input';
+  input.value = '08:00';
+  wrap.appendChild(input);
+
+  const btn = document.createElement('button');
+  btn.className = 'trilha-acao primaria';
+  btn.textContent = '✅ Confirmar horário';
+  btn.onclick = () => {
+    const continuar = () => {
+      textInput.value = input.value;
+      sendMessage();
+    };
+    if(exigeConfiguracao(continuar)) return;
+    continuar();
+  };
+  wrap.appendChild(btn);
+
+  return wrap;
+}
+
+function buildLembreteSalvoCard(tipo, horario, isHistorico){
+  const card = document.createElement('div');
+  card.className = 'lembrete-salvo-card';
+  card.textContent = `⏰ Lembrete salvo para ${horario}! Vou te avisar nesse horário, mesmo com o app fechado.`;
+  if(!isHistorico){
+    salvarLembrete(tipo, horario);
+    garantirInscricaoPush();
+  }
+  return card;
+}
+
 function mostrarSeletorSerie(wrap, body){
   body.innerHTML = '';
   const t = document.createElement('div');
@@ -2194,7 +2355,7 @@ function addAssistantBubble(text, isTyping, skipTimers){
 }
 
 function renderAssistantContent(bubble, text, skipTimers){
-  const markerRegex = /\[TIMER:\s*(\d+)\s*\|\s*([^\]]+)\]|\[CATALOGO\]|\[MODULO_CONCLUIDO:\s*([a-zA-Z0-9_-]+)\]|\[SUGESTOES:\s*([^\]]+)\]|\[PLANO_SALVO:\s*([^\]]+)\]/g;
+  const markerRegex = /\[TIMER:\s*(\d+)\s*\|\s*([^\]]+)\]|\[CATALOGO\]|\[MODULO_CONCLUIDO:\s*([a-zA-Z0-9_-]+)\]|\[SUGESTOES:\s*([^\]]+)\]|\[PLANO_SALVO:\s*([^\]]+)\]|\[PEDIR_HORARIO:\s*([a-zA-Z0-9_-]+)\]|\[LEMBRETE_SALVO:\s*([a-zA-Z0-9_-]+)\s*\|\s*(\d{1,2}:\d{2})\]/g;
   let lastIndex = 0;
   let match;
   const fragments = [];
@@ -2208,6 +2369,10 @@ function renderAssistantContent(bubble, text, skipTimers){
       fragments.push({type:'sugestoes', opcoes: match[4].split('|').map(s => s.trim()).filter(Boolean)});
     } else if(match[5]){
       fragments.push({type:'plano_salvo', resumo: match[5].trim()});
+    } else if(match[6]){
+      fragments.push({type:'pedir_horario', tipo: match[6].trim()});
+    } else if(match[7] && match[8]){
+      fragments.push({type:'lembrete_salvo', tipo: match[7].trim(), horario: match[8].trim()});
     } else {
       fragments.push({type:'timer', seconds: parseInt(match[1]), label: match[2].trim()});
     }
@@ -2237,6 +2402,11 @@ function renderAssistantContent(bubble, text, skipTimers){
       // da página) — nesse caso só mostramos o card, sem salvar de novo. Isso evita
       // sobrescrever um perfil mais recente com uma versão antiga ao recarregar.
       bubble.appendChild(buildPlanoSalvoCard(f.resumo, skipTimers));
+    } else if(f.type === 'pedir_horario'){
+      bubble.appendChild(buildHorarioPicker(f.tipo));
+    } else if(f.type === 'lembrete_salvo'){
+      // mesmo cuidado do plano_salvo: não regravar ao reabrir o histórico.
+      bubble.appendChild(buildLembreteSalvoCard(f.tipo, f.horario, skipTimers));
     }
   });
 }

@@ -699,6 +699,25 @@
     font-size: 15.5px;
     font-weight: 700;
   }
+  .lembrete-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--cream-2);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .lembrete-item .li-emoji { font-size: 20px; flex-shrink: 0; }
+  .lembrete-item .li-info { flex: 1; }
+  .lembrete-item .li-label { font-size: 14.5px; font-weight: 700; color: var(--ink); }
+  .lembrete-item .li-horario { font-size: 13.5px; color: var(--ink-soft); }
+  .lembrete-item .li-remover {
+    background: none; border: none; font-size: 18px; color: var(--ink-soft);
+    cursor: pointer; padding: 6px;
+  }
+  .lembretes-vazio { font-size: 14.5px; color: var(--ink-soft); padding: 4px 2px; }
 </style>
 </head>
 <body>
@@ -764,6 +783,12 @@
         <button class="primary" id="copiarLinkBtn" style="flex:none; padding:13px 18px;">Copiar</button>
       </div>
     </div>
+
+    <div id="lembretesBox" style="display:none; margin-top:22px; padding-top:18px; border-top:2px solid var(--line);">
+      <label>🔔 Seus lembretes</label>
+      <p class="hint" style="margin-top:4px;">Horários combinados com o professor. Peça um novo direto na conversa, ou remova um daqui.</p>
+      <div id="lembretesLista" style="margin-top:10px;"></div>
+    </div>
   </div>
 </div>
 
@@ -806,6 +831,10 @@ let AI_PROVIDER = 'anthropic';
    este professor, via marcador [PLANO_SALVO: ...]. Recurso opcional e
    genérico — professores que não usam o marcador nunca preenchem isso. */
 let PERFIL_NUTRICIONAL_RESUMO = null;
+/* Config de lembretes do professor (emoji/label por tipo), vinda da ficha —
+   usada só pra deixar a lista de lembretes nas configurações com nomes
+   bonitos ("💧 Água") em vez do tipo cru ("agua"). */
+let LEMBRETES_CONFIG = {};
 
 /* ================= STATE ================= */
 /* Chaves do localStorage separadas por professor (conversas não se misturam);
@@ -923,6 +952,7 @@ async function boot(){
   SERIES = (TRILHA && Array.isArray(TRILHA.series) && TRILHA.series.length > 0) ? TRILHA.series : null;
   MATERIAS = Array.isArray(CONFIG.materias) ? CONFIG.materias : [];
   AI_PROVIDER = CONFIG.ai_provider || 'anthropic';
+  LEMBRETES_CONFIG = CONFIG.lembretes_config || {};
   catalogBtn.style.display = (TRILHA || PILARES.length > 0) ? 'flex' : 'none';
   AVATAR_SRC = CONFIG.avatar_b64 ? ('data:image/png;base64,' + CONFIG.avatar_b64)
              : (CONFIG.avatar_url || '');
@@ -1830,6 +1860,78 @@ function buildLembreteSalvoCard(tipo, horario, isHistorico){
     garantirInscricaoPush();
   }
   return card;
+}
+
+/* Lista de lembretes dentro das configurações (⚙️). Busca do banco, mostra
+   com rótulo/emoji vindos da ficha do professor, e permite remover. */
+async function carregarLembretes(){
+  const box = document.getElementById('lembretesBox');
+  const lista = document.getElementById('lembretesLista');
+  if(!alunoEmail){ box.style.display = 'none'; return; }
+
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/lembretes-listar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: alunoEmail, professor_slug: PROFESSOR_SLUG })
+    });
+    const data = await res.json();
+    const lembretes = data.lembretes || [];
+
+    if(lembretes.length === 0){
+      box.style.display = 'none';
+      return;
+    }
+
+    box.style.display = 'block';
+    lista.innerHTML = '';
+    lembretes.forEach(l => {
+      const meta = LEMBRETES_CONFIG[l.tipo] || {};
+      const item = document.createElement('div');
+      item.className = 'lembrete-item';
+
+      const emoji = document.createElement('span');
+      emoji.className = 'li-emoji';
+      emoji.textContent = meta.emoji || '⏰';
+
+      const info = document.createElement('div');
+      info.className = 'li-info';
+      const label = document.createElement('div');
+      label.className = 'li-label';
+      label.textContent = meta.label || l.tipo;
+      const horario = document.createElement('div');
+      horario.className = 'li-horario';
+      horario.textContent = l.horario.slice(0,5);
+      info.appendChild(label);
+      info.appendChild(horario);
+
+      const remover = document.createElement('button');
+      remover.className = 'li-remover';
+      remover.textContent = '✕';
+      remover.onclick = () => removerLembrete(l.tipo);
+
+      item.appendChild(emoji);
+      item.appendChild(info);
+      item.appendChild(remover);
+      lista.appendChild(item);
+    });
+  } catch(e) {
+    console.error('Erro ao carregar lembretes:', e);
+    box.style.display = 'none';
+  }
+}
+
+async function removerLembrete(tipo){
+  try{
+    await fetch(`${SUPABASE_URL}/functions/v1/lembrete-remover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: alunoEmail, professor_slug: PROFESSOR_SLUG, tipo })
+    });
+    carregarLembretes();
+  } catch(e) {
+    console.error('Erro ao remover lembrete:', e);
+  }
 }
 
 function mostrarSeletorSerie(wrap, body){
@@ -2882,7 +2984,7 @@ openSettings.onclick = () => {
   document.getElementById('modalHint').textContent = 'Seu e-mail identifica sua conta e seus créditos, salvo só neste navegador.';
   emailInput.value = alunoEmail;
   settingsModal.classList.add('show');
-  if(alunoEmail){ carregarMeuCodigoIndicacao(); }
+  if(alunoEmail){ carregarMeuCodigoIndicacao(); carregarLembretes(); }
 };
 settingsModal.onclick = (e) => {
   if(e.target === settingsModal){
@@ -2902,6 +3004,7 @@ saveKeyBtn.onclick = () => {
   registrarIndicacaoSeNecessario();
   carregarMeuCodigoIndicacao();
   buscarPerfilNutricional();
+  carregarLembretes();
 
   // Retoma automaticamente a ação que o usuário tentou fazer antes de configurar o e-mail
   if(acaoPendente){

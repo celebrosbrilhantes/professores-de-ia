@@ -24,9 +24,10 @@ self.addEventListener('push', (event) => {
     body: dados.corpo,
     icon: '/favicon-32.png',
     badge: '/favicon-32.png',
-    vibrate: [200, 100, 200],
+    vibrate: [300, 150, 300, 150, 300],
     tag: dados.tipo || 'lembrete-geral',
     renotify: true,
+    requireInteraction: true, // fica na tela até a aluna tocar (não some sozinha)
     data: { url: self.location.origin }
   };
 
